@@ -1,9 +1,12 @@
+'use client'
 import React, { useState } from "react";
 import OpenAI from "openai";
 
 // Set up OpenAI configuration
 const client = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
+  apiKey: 'none',
+  dangerouslyAllowBrowser: true,
+  baseURL: "http://127.0.0.1:1234/v1",
 });
 
 function Home() {
@@ -32,6 +35,7 @@ function Home() {
         stream: true,
       });
 
+
       let aiMessage = "";
       for await (const chunk of stream) {
         aiMessage += chunk.choices[0]?.delta?.content || '';
@@ -58,16 +62,14 @@ function Home() {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`flex ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"
+                }`}
             >
               <div
-                className={`p-3 rounded-lg ${
-                  msg.sender === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-800"
-                }`}
+                className={`p-3 rounded-lg ${msg.sender === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-800"
+                  }`}
               >
                 {msg.text}
               </div>
