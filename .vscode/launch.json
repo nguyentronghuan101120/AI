@@ -5,11 +5,39 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Main.py",
+            "name": "Python: FastAPI",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/main.py",
-            "console": "integratedTerminal"
+            "module": "uvicorn",
+            // "env": {
+            //     "db_username": "postgres",
+            //     "db_password": "secret",
+            //     "host_server": "localhost",
+            //     "database_name": "fastapi",
+            //     "ssl_mode": "prefer",
+            //     "db_server_port": "5432"
+            // },
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "args": [
+                "src.main:app",
+                "--reload",
+                "--port",
+                "8000",
+                "--host",
+                "0.0.0.0",
+            ]
+        },
+        {
+            "name": "Python: WebUI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/web_ui.py",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
         }
     ]
 }
