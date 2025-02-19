@@ -18,7 +18,7 @@ def chat_generate(request: ChatRequest):
         messages=request.prompt,
         model='',  # Specify the model name before using
         stream=False,
-        tools=tools_define.tools  # Uncomment if tools are required
+        tools=tools_define.tools if request.hasTool else None
     )
     
     # Ensure choices exist before accessing message content
@@ -40,7 +40,7 @@ def chat_generate_stream(request: ChatRequest):
         messages=request.prompt,
         model='',  # Specify the model name before using
         stream=True,
-        tools=tools_define.tools
+        tools=tools_define.tools if request.hasTool else None
     )
     
     return stream
@@ -76,7 +76,7 @@ def chat_logic(message, chat_history):
 
     # Call OpenAI API
     chat_stream = chat_generate_stream(
-        request=ChatRequest(prompt=messages)
+        request=ChatRequest(prompt=messages, hasTool=True)
     )
 
     chat_history[-1][1] = ""
@@ -97,9 +97,16 @@ def chat_logic(message, chat_history):
             yield "", chat_history
         
         if getattr(delta, 'tool_calls', None):
-            final_tool_calls = tools_helper.final_tool_calls_handler(final_tool_calls, delta)
+            final_tool_calls = tools_helper.final_tool_calls_handler(final_tool_calls, delta.tool_calls)
      
     if final_tool_calls:
-        yield from tools_helper.process_tool_calls(final_tool_calls, chat_history)
-        
+        chat_history[-1][1] = ""
+        tool_call_message = tools_helper.process_tool_calls(final_tool_calls)
+        messages.append(tool_call_message)
+        final_response = chat_generate_stream(ChatRequest(prompt=messages, hasTool=False))
+        for chunk in final_response:
+            if chunk.choices[0].delta.content:
+                chat_history[-1][1] += chunk.choices[0].delta.content
+                yield "", chat_history
+    
     return "", chat_history

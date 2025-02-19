@@ -6,12 +6,11 @@ def extract_tool_args(tool_call):
     """Trích xuất đối số từ tool_call."""
     return json.loads(tool_call.function.arguments)
 
-def handle_weather_tool_call(tool_call, chat_history):
+def handle_weather_tool_call(tool_call):
     """Xử lý tool lấy thông tin thời tiết."""
     args = extract_tool_args(tool_call)
-    weather = weather_service.get_weather(args.get("location"), args.get("unit"))
-    chat_history.append([None, weather])
-    return chat_history
+    weather_info = weather_service.get_weather(args.get("location"), args.get("unit"))
+    return weather_info
     
 def handle_image_tool_call(tool_call, chat_history):
     """Xử lý tool tạo ảnh."""
@@ -27,30 +26,32 @@ def handle_image_tool_call(tool_call, chat_history):
     
     return chat_history
 
-def process_tool_calls(final_tool_calls, chat_history):
+def process_tool_calls(final_tool_calls):
     """Xử lý tất cả các tool được gọi."""
+    content = ""
     tool_handlers = {
         ToolFunction.GET_CURRENT_WEATHER.value: handle_weather_tool_call,
         ToolFunction.GENERATE_IMAGE.value: handle_image_tool_call,
     }
 
     for tool_call in final_tool_calls.values():
-        chat_history[-1][1] = ""  
         handler = tool_handlers.get(tool_call.function.name)
         if handler:
-            chat_history = handler(tool_call, chat_history)
-        yield "", chat_history
+            content = handler(tool_call)
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "tool_call_name": tool_call.function.name,
+        "content": content
+    }
 
-def final_tool_calls_handler(final_tool_calls, delta):
+def final_tool_calls_handler(final_tool_calls, tool_calls):
     """Xử lý các tool được yêu cầu."""
-
-    if getattr(delta, 'tool_calls', None):
-        tool_calls = delta.tool_calls
-        for tool_call in tool_calls:
-            index = tool_calls.index(tool_call)
-            if index not in final_tool_calls:
-                final_tool_calls[index] = tool_call
-            
-            final_tool_calls[index].function.arguments += tool_call.function.arguments
+    for tool_call in tool_calls:
+        index = tool_calls.index(tool_call)
+        if index not in final_tool_calls:
+            final_tool_calls[index] = tool_call
+        
+        final_tool_calls[index].function.arguments += tool_call.function.arguments
     
     return final_tool_calls
