@@ -37,7 +37,12 @@ def process_tool_calls(final_tool_calls):
     for tool_call in final_tool_calls.values():
         handler = tool_handlers.get(tool_call.function.name)
         if handler:
-            content = handler(tool_call)
+            result = handler(tool_call)
+            if isinstance(result, list):
+                content = json.dumps(result)  # Convert list to JSON string if needed
+            else:
+                content = str(result)  # Ensure content is a string
+
     return {
         "role": "tool",
         "tool_call_id": tool_call.id,
