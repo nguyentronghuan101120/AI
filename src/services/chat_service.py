@@ -102,23 +102,21 @@ def chat_logic(message, chat_history):
     if final_tool_calls:
         chat_history[-1][1] = ""
         tool_call_message = tools_helper.process_tool_calls(final_tool_calls)
-        tool_call_name = tool_call_message.get("tool_call_name")
         
+        messages.append(tool_call_message)
+        
+        final_response = chat_generate_stream(ChatRequest(prompt=messages, hasTool=False))
+        for chunk in final_response:
+            delta_content = chunk.choices[0].delta.content
+            if delta_content:
+                chat_history[-1][1] += delta_content
+                yield "", chat_history
+        
+        tool_call_name = tool_call_message.get("tool_call_name")
         if tool_call_name == tools_define.ToolFunction.GENERATE_IMAGE.value:
             image_path = tool_call_message.get("content")
-            chat_history[-1][1] = ""
-            chat_history.extend([
-                [None, "This is the image I've created for you, please enjoy it!"],
-                [None, (image_path, 'prompt')]
-            ])
+            chat_history.append([None, (image_path, '')])
             yield "", chat_history
-        else:
-            messages.append(tool_call_message)
-            final_response = chat_generate_stream(ChatRequest(prompt=messages, hasTool=False))
-            for chunk in final_response:
-                delta_content = chunk.choices[0].delta.content
-                if delta_content:
-                    chat_history[-1][1] += delta_content
-                    yield "", chat_history
+                
     
     return "", chat_history

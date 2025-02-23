@@ -52,6 +52,5 @@ tools = [
         description="Get the current weather in a given location",
         properties=WEATHER_TOOL_PROPERTIES,
         required=["location", "unit"],
-        strict=True,
     ),
 ]
