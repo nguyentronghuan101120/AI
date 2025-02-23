@@ -4,7 +4,7 @@ from enum import Enum
 class ToolFunction(Enum):
     GET_CURRENT_WEATHER = "get_current_weather"
     GENERATE_IMAGE = "generate_image"
-
+    READ_WEB_URL = "read_web_url"
 
 def create_tool(name: ToolFunction, description: str, properties: dict, required=None, strict=False) -> dict:
     """Creates a standardized tool dictionary."""
@@ -41,6 +41,10 @@ WEATHER_TOOL_PROPERTIES = {
     },
 }
 
+WEB_DATA_TOOL_PROPERTIES = {
+    "url": {"type": "string", "description": "The URL to read"},
+}
+
 # Tools definition
 tools = [
     create_tool(
@@ -53,5 +57,10 @@ tools = [
         description="Get the current weather in a given location",
         properties=WEATHER_TOOL_PROPERTIES,
         required=["latitude", "longitude", "unit"],
+    ),
+    create_tool(
+        name=ToolFunction.READ_WEB_URL,
+        description="Reads the content of a given URL",
+        properties=WEB_DATA_TOOL_PROPERTIES,
     ),
 ]

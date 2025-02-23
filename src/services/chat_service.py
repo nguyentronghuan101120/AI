@@ -117,6 +117,11 @@ def chat_logic(message, chat_history):
             image_path = tool_call_message.get("content")
             chat_history.append([None, (image_path, '')])
             yield "", chat_history
+        
+        # TODO: Handle show markdown content for the user, if user ask for it
+        # if tool_call_name == tools_define.ToolFunction.READ_WEB_URL.value:
+        #     web_data = tool_call_message.get("content")
+        #     chat_history.append([None, web_data])
+        #     yield "", chat_history
                 
-    
     return "", chat_history

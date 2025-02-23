@@ -8,3 +8,4 @@ __pycache__
 .pyz
 outputs/*
 src/utils/image_pipeline.py
+.env.local

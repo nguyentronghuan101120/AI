@@ -1,6 +1,6 @@
 import json
 from constants.tools_define import ToolFunction
-from services import weather_service, image_service
+from services import weather_service, image_service, web_data_service
 
 def extract_tool_args(tool_call):
     """Trích xuất đối số từ tool_call."""
@@ -11,6 +11,12 @@ def handle_weather_tool_call(tool_call):
     args = extract_tool_args(tool_call)
     weather_info = weather_service.fetch_weather_data(args.get("latitude"), args.get("longitude"), args.get("unit"))
     return weather_info
+
+def handle_web_data_tool_call(tool_call):
+    """Xử lý tool lấy thông tin web."""
+    args = extract_tool_args(tool_call)
+    web_data = web_data_service.read_web_url(args.get("url"))
+    return web_data
     
 def handle_image_tool_call(tool_call):
     """Xử lý tool tạo ảnh."""
@@ -26,6 +32,7 @@ def process_tool_calls(final_tool_calls):
     tool_handlers = {
         ToolFunction.GET_CURRENT_WEATHER.value: handle_weather_tool_call,
         ToolFunction.GENERATE_IMAGE.value: handle_image_tool_call,
+        ToolFunction.READ_WEB_URL.value: handle_web_data_tool_call,
     }
 
     for tool_call in final_tool_calls.values():
@@ -50,6 +57,7 @@ def process_tool_calls(final_tool_calls):
     tool_handlers = {
         ToolFunction.GET_CURRENT_WEATHER.value: handle_weather_tool_call,
         ToolFunction.GENERATE_IMAGE.value: handle_image_tool_call,
+        ToolFunction.READ_WEB_URL.value: handle_web_data_tool_call,
     }
 
     for tool_call in final_tool_calls.values():
