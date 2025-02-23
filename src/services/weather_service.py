@@ -1,4 +1,4 @@
-{
+weather_data = {
    "coord": {
       "lon": 105.841,
       "lat": 21.025
@@ -46,3 +46,9 @@
    "name": "Hanoi",
    "cod": 200
 }
+
+def get_weather(location: str, unit: str) -> str:
+    """
+    Get the current weather in a given location
+    """
+    return weather_data

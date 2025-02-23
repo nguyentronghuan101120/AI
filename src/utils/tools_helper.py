@@ -12,19 +12,37 @@ def handle_weather_tool_call(tool_call):
     weather_info = weather_service.get_weather(args.get("location"), args.get("unit"))
     return weather_info
     
-def handle_image_tool_call(tool_call, chat_history):
+def handle_image_tool_call(tool_call):
     """Xử lý tool tạo ảnh."""
     args = extract_tool_args(tool_call)
     prompt = args.get("prompt")
-    
-    chat_history.append([None, "Please wait while I'm generating the image..."])
-    yield "", chat_history
-    
+        
     image_path = image_service.generate_image_url(prompt)
-    chat_history.append([None, "This is the image I've created for you, please enjoy it!"])
-    chat_history.append([None, (image_path, prompt)])
-    
-    return chat_history
+    return image_path
+
+def process_tool_calls(final_tool_calls):
+    """Xử lý tất cả các tool được gọi."""
+    content = ""
+    tool_handlers = {
+        ToolFunction.GET_CURRENT_WEATHER.value: handle_weather_tool_call,
+        ToolFunction.GENERATE_IMAGE.value: handle_image_tool_call,
+    }
+
+    for tool_call in final_tool_calls.values():
+        handler = tool_handlers.get(tool_call.function.name)
+        if handler:
+            result = handler(tool_call)
+            if isinstance(result, list):
+                content = json.dumps(result)  # Convert list to JSON string if needed
+            else:
+                content = str(result)  # Ensure content is a string
+
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "tool_call_name": tool_call.function.name,
+        "content": content
+    }
 
 def process_tool_calls(final_tool_calls):
     """Xử lý tất cả các tool được gọi."""
