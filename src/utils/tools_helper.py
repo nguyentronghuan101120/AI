@@ -9,7 +9,7 @@ def extract_tool_args(tool_call):
 def handle_weather_tool_call(tool_call):
     """Xử lý tool lấy thông tin thời tiết."""
     args = extract_tool_args(tool_call)
-    weather_info = weather_service.get_weather(args.get("location"), args.get("unit"))
+    weather_info = weather_service.fetch_weather_data(args.get("latitude"), args.get("longitude"), args.get("unit"))
     return weather_info
     
 def handle_image_tool_call(tool_call):

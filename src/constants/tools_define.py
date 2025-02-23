@@ -32,7 +32,8 @@ IMAGE_TOOL_PROPERTIES = {
 }
 
 WEATHER_TOOL_PROPERTIES = {
-    "location": {"type": "string", "description": "The city name"},
+    "latitude": {"type": "number", "description": "The latitude of the location"},
+    "longitude": {"type": "number", "description": "The longitude of the location"},
     "unit": {
         "type": "string",
         "enum": ["celsius", "fahrenheit"],
@@ -51,6 +52,6 @@ tools = [
         name=ToolFunction.GET_CURRENT_WEATHER,
         description="Get the current weather in a given location",
         properties=WEATHER_TOOL_PROPERTIES,
-        required=["location", "unit"],
+        required=["latitude", "longitude", "unit"],
     ),
 ]
