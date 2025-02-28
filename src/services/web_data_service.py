@@ -27,8 +27,21 @@ jina_api_key = os.getenv("jina_api_key")
     
 #     return search_results
 
-def read_web_url(url_to_read):
+def read_web_url(url_to_read: str) -> str:
+    """
+    Fetches the content from a specified URL using the Jina API.
 
+    This function sends a GET request to the Jina API with the provided URL
+    and returns the content of the response. If an error occurs during the
+    request, it returns an error message.
+
+    Parameters:
+    url_to_read (str): The URL path to append to the Jina API base URL.
+
+    Returns:
+    str: The content of the response if successful, or an error message if
+    the request fails.
+    """
     try:
         response = requests.get(
             f"https://r.jina.ai/{url_to_read}",

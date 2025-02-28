@@ -1,7 +1,9 @@
-from constants import system_prompts, tools_define
+import json
+from constants import system_prompts
 from models.requests.chat_request import ChatRequest
-from utils import tools_helper
+from utils.tools import tools_helper
 from utils.client import openai_client
+from utils.tools import tools_define
 
 
 def chat_generate(request: ChatRequest):
@@ -58,70 +60,80 @@ async def get_model_info() -> dict:
         "model_version": "1.0.0"
     }
 
-def chat_logic(message, chat_history):
-    """Hàm chính xử lý chat logic."""
-    
-    # Build conversation history
+def _build_conversation_history(message: str, chat_history: list) -> list:
+    """Xây dựng lịch sử hội thoại theo định dạng yêu cầu."""
     messages = [{"role": "system", "content": system_prompts.system_prompt}]
     
     for user_message, bot_message in chat_history:
-        if user_message is not None:
-            messages.append({"role": "user", "content": user_message})
-            messages.append({"role": "assistant", "content": bot_message})
+        if user_message:
+            messages.extend([
+                {"role": "user", "content": user_message},
+                {"role": "assistant", "content": bot_message}
+            ])
     
-    # Append new user message
     messages.append({"role": "user", "content": message})
-    chat_history.append([message, "Processing your request, please wait..."])
-    yield "", chat_history
+    return messages
 
-    # Call OpenAI API
-    chat_stream = chat_generate_stream(
-        request=ChatRequest(prompt=messages, hasTool=True)
-    )
 
-    chat_history[-1][1] = ""
+def _process_chat_stream(chat_stream, chat_history):
+    """Xử lý luồng dữ liệu từ OpenAI API."""
     final_tool_calls = {}
 
     for chunk in chat_stream:
         delta = chunk.choices[0].delta
         
-        # Nếu có nội dung phản hồi từ AI
+        if "TOOL_REQUEST" in chat_history[-1][1]:
+            chat_history[-1][1] = "Please wait while I'm requesting a tool..."
+            yield "", chat_history
+
+        if getattr(delta, 'tool_calls', None):
+            final_tool_calls = tools_helper.final_tool_calls_handler(final_tool_calls, delta.tool_calls)
+            
         if delta.content:
             chat_history[-1][1] += delta.content
             yield "", chat_history
 
-        # Nếu AI yêu cầu gọi tool
-        if "TOOL_REQUEST" in chat_history[-1][1]:
-            chat_history.pop()
-            chat_history.append([message, "Please wait while I'm requesting a tool..."])
+    return final_tool_calls
+
+
+def _handle_tool_calls(final_tool_calls, messages, chat_history):
+    """Xử lý kết quả của tool calls."""
+    if not final_tool_calls:
+        return
+
+    tool_call_message = tools_helper.process_tool_calls(final_tool_calls)
+    messages.append(tool_call_message)
+
+    chat_stream = chat_generate_stream(ChatRequest(prompt=messages))
+    for chunk in chat_stream:
+        delta_content = chunk.choices[0].delta.content
+        if delta_content:
+            chat_history[-1][1] += delta_content
             yield "", chat_history
+
+    tool_call_name = tool_call_message.get("tool_call_name")
+
+    if tool_call_name == tools_define.ToolFunction.GENERATE_IMAGE.value:
+        content = tool_call_message.get("content")
+        chat_history.append([None, (content, '')])
+        yield "", chat_history
         
-        if getattr(delta, 'tool_calls', None):
-            final_tool_calls = tools_helper.final_tool_calls_handler(final_tool_calls, delta.tool_calls)
-     
-    if final_tool_calls:
-        chat_history[-1][1] = ""
-        tool_call_message = tools_helper.process_tool_calls(final_tool_calls)
-        
-        messages.append(tool_call_message)
-        
-        final_response = chat_generate_stream(ChatRequest(prompt=messages, hasTool=False))
-        for chunk in final_response:
-            delta_content = chunk.choices[0].delta.content
-            if delta_content:
-                chat_history[-1][1] += delta_content
-                yield "", chat_history
-        
-        tool_call_name = tool_call_message.get("tool_call_name")
-        if tool_call_name == tools_define.ToolFunction.GENERATE_IMAGE.value:
-            image_path = tool_call_message.get("content")
-            chat_history.append([None, (image_path, '')])
-            yield "", chat_history
-        
-        # TODO: Handle show markdown content for the user, if user ask for it
-        # if tool_call_name == tools_define.ToolFunction.READ_WEB_URL.value:
-        #     web_data = tool_call_message.get("content")
-        #     chat_history.append([None, web_data])
-        #     yield "", chat_history
-                
+    elif tool_call_name == tools_define.ToolFunction.GET_STOCK_SYMBOL.value:
+        content = messages[-1]["content"]
+        yield from chat_logic(content, chat_history)
+
+
+def chat_logic(message: str, chat_history: list):
+    """Hàm chính xử lý chat logic."""
+    messages = _build_conversation_history(message, chat_history)
+
+    chat_history.append([message, "Processing your request, please wait..."])
+    yield "", chat_history
+
+    chat_stream = chat_generate_stream(ChatRequest(prompt=messages, hasTool=True))
+    chat_history[-1][1] = ""
+
+    final_tool_calls = yield from _process_chat_stream(chat_stream, chat_history)
+    yield from _handle_tool_calls(final_tool_calls, messages, chat_history)
+
     return "", chat_history

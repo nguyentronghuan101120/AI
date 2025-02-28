@@ -20,11 +20,24 @@ except Exception as e:
 
 # try:
 #     with gr.Blocks() as demo:
-#         gr.Markdown("# My smart AI chatbot")
-#         response = gr.Chatbot(label="My smart AI chatbot", height=600)
-#         chat = gr.MultimodalTextbox(placeholder="Enter your message here...", show_label=False, interactive=True)
-#         chat.submit(chat_logic, inputs=[response, chat], outputs=[response, chat])
+#         chatbot = gr.Chatbot()
 
-#     demo.launch(share=True, allowed_paths=["../outputs"])
+#         chat_input = gr.MultimodalTextbox(
+#             interactive=True,
+#             file_count="multiple",
+#             placeholder="Enter message or upload file...",
+#             show_label=False,
+#             sources=["microphone", "upload"],
+#         )
+
+#         chat_msg = chat_input.submit(
+#             chat_logic, [chatbot, chat_input], [chatbot, chat_input]
+#         )
+#         bot_msg = chat_msg.then(chat_logic, chatbot, chatbot, api_name="bot_response")
+#         bot_msg.then(lambda: gr.MultimodalTextbox(interactive=True), None, [chat_input])
+
+#         chatbot.like(None, None, None, like_user_message=True)
+
+#         demo.launch(share=True, allowed_paths=["../outputs"])
 # except Exception as e:
 #     print(f"Error initializing Gradio interface: {e}")
