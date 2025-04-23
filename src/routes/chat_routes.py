@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from models.requests.chat_request import ChatRequest
@@ -41,11 +42,13 @@ async def chat_stream(request: ChatRequest):
     
     async def event_generator():
         for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
-
+            chunk_dict = json.loads(chunk.model_dump_json()) 
+            response = BaseResponse(data=chunk_dict).model_dump()
+            yield f"{json.dumps(response, ensure_ascii=False)}\n\n"
+    
     return StreamingResponse(event_generator(), media_type='text/event-stream')
+
+
 @router.get("/get-model-info/", response_model=BaseResponse, summary="Retrieve model information")
 async def get_model_info():
     """

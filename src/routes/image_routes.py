@@ -41,3 +41,11 @@ async def generate_base64_image(imgRequest: ImageRequest):
     image.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue())
     return BaseResponse(data={"image": img_str})
+
+@router.post("/image/url-generator/")
+async def generate_image_url(prompt: str, width: int = 512, height: int = 512, guidance_scale: float = 7.5, num_inference_steps: int = 30):
+    image_url = image_service.generate_image_url(prompt, width, height, guidance_scale, num_inference_steps)
+    return BaseResponse(data={"image": image_url})
+
+
+
