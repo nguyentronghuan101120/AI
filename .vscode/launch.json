@@ -28,16 +28,7 @@
                 "--host",
                 "0.0.0.0",
             ]
-        },
-        {
-            "name": "Python: WebUI",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/web_ui.py",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            },
-            "console": "integratedTerminal",
         }
+       
     ]
 }
