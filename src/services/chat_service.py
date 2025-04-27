@@ -15,9 +15,13 @@ def chat_generate_stream(request: ChatRequest):
     Returns:
         AsyncGenerator[str, None]: An asynchronous generator yielding response chunks.
     """
+    
+    # Add system prompt to the beginning of messages
+    messages = [{"role": "system", "content": system_prompts.system_prompt}] + request.prompt
+    
     # Streaming chat response in chunks
     stream = openai_client.chat.completions.create(
-        messages=request.prompt,
+        messages=messages,
         model='', 
         stream=True,
         tools=tools_define.tools if request.hasTool else None
@@ -36,10 +40,10 @@ def chat_generate_stream(request: ChatRequest):
 
     tool_call_message = tools_helper.process_tool_calls(final_tool_calls)
     
-    request.prompt.append(tool_call_message)
+    messages.append(tool_call_message)
     
     new_stream = openai_client.chat.completions.create(
-        messages=request.prompt,
+        messages=messages,
         model='', 
         stream=True,
     )
