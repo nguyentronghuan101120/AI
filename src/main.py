@@ -3,8 +3,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from models.responses.base_response import BaseResponse
-from routes import chat_routes, image_routes
+from routes import chat_routes
 from utils.exception import CustomException
 
 app = FastAPI()
@@ -41,9 +42,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 app.include_router(chat_routes.router, prefix="/api/v1")
-app.include_router(image_routes.router, prefix="/api/v1")
 @app.get("/")
 def read_root():
     return {"message": "Welcome my API"}
 
-# Define a route for the root path ('/') that returns a JSON response with a welcome message
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
