@@ -44,6 +44,21 @@ def handle_image_tool_call(tool_call):
     image_path = image_service.generate_image_url(prompt)
     return image_path
 
+def handle_search_web_tool_call(tool_call):
+    """
+    Handle web search tool call.
+    
+    Args:
+        tool_call: The tool call object containing search query
+        
+    Returns:
+        str: The search results
+    """
+    args = extract_tool_args(tool_call)
+    search_query = args.get("search_query")
+    search_results = web_data_service.search_web(search_query)
+    return search_results
+
 def process_tool_calls(final_tool_calls):
     """
     Process all tool calls and execute them.
@@ -62,6 +77,7 @@ def process_tool_calls(final_tool_calls):
     tool_handlers = {
         ToolFunction.GENERATE_IMAGE.value: handle_image_tool_call,
         ToolFunction.READ_WEB_URL.value: handle_web_data_tool_call,
+        ToolFunction.SEARCH_WEB.value: handle_search_web_tool_call,
     }
 
     for tool_call in final_tool_calls.values():

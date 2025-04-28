@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
 import os
@@ -5,27 +6,46 @@ import os
 load_dotenv('.env.local')  # Specify the correct file name
 
 jina_api_key = os.getenv("jina_api_key")
+serp_api_key = os.getenv("serp_api_key")
 
-# TODO: Handle this later
-# def search_web(search_query, api_key):
-#     # Bing Search API endpoint
-#     endpoint = "https://api.bing.microsoft.com/v7.0/search"
+def search_web(search_query: str) -> list[dict[str, str]]:
+    """
+    Performs a web search using the provided search query and returns structured results.
+
+    Parameters:
+    search_query (str): The search query string to look up
+
+    Returns:
+    list[dict[str, str]]: A list of dictionaries containing search results with 'title', 'link', and 'snippet' keys.
+    """
+    headers = {
+        'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+    }
     
-#     # Set up the headers with the API key
-#     headers = {"Ocp-Apim-Subscription-Key": api_key}
-    
-#     # Set up the parameters for the search
-#     params = {"q": search_query, "textDecorations": True, "textFormat": "HTML"}
-    
-#     try:
-#         # Make the request to the Bing Search API
-#         response = requests.get(endpoint, headers=headers, params=params)
-#         response.raise_for_status()  # Raise an error for bad responses
-#         search_results = response.json()
-#     except requests.exceptions.RequestException as e:
-#         search_results = f"An error occurred: {e}"
-    
-#     return search_results
+    try:
+        response = requests.get(
+            f'https://html.duckduckgo.com/html/?q={search_query}',
+            headers=headers,
+            timeout=10  # Add timeout to prevent hanging
+        )
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = soup.find_all('div', class_='result')[:10]  # Limit to first 10 results immediately
+        
+        return [
+            {
+                'title': title_tag.text,
+                'link': title_tag['href'],
+                'snippet': snippet_tag.text if (snippet_tag := result.find('a', class_='result__snippet')) else 'No description available'
+            }
+            for result in results
+            if (title_tag := result.find('a', class_='result__a'))
+        ]
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error during web search: {e}")
+        return []
 
 def read_web_url(url_to_read: str) -> str:
     """
