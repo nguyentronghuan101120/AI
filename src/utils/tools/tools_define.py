@@ -2,14 +2,12 @@ from enum import Enum
 import inspect
 from pydantic import TypeAdapter
 
-from services import image_service, stock_service, weather_service, web_data_service
+from services import image_service, web_data_service
 
 class ToolFunction(Enum):
-    GET_CURRENT_WEATHER = weather_service.fetch_weather_data.__name__
     GENERATE_IMAGE = image_service.generate_image_url.__name__
     READ_WEB_URL = web_data_service.read_web_url.__name__
-    GET_STOCK_SYMBOL = stock_service.get_stock_symbol.__name__
-    GET_STOCK_PRICE = stock_service.get_stock_price.__name__
+    SEARCH_WEB = web_data_service.web_search_with_3rd_party.__name__
 
 def create_tool(function: callable) -> dict:
     """Creates a standardized tool dictionary."""
@@ -30,15 +28,9 @@ tools = [
         function=image_service.generate_image_url,
     ),
     create_tool(
-        function=weather_service.fetch_weather_data,
-    ),
-    create_tool(
         function=web_data_service.read_web_url,
     ),
     create_tool(
-        function=stock_service.get_stock_symbol,
-    ),
-    create_tool(
-        function=stock_service.get_stock_price,
+        function=web_data_service.web_search_with_3rd_party,
     ),
 ]
