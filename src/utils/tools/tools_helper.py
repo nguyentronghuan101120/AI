@@ -56,7 +56,7 @@ def handle_search_web_tool_call(tool_call):
     """
     args = extract_tool_args(tool_call)
     search_query = args.get("search_query")
-    search_results = web_data_service.search_web(search_query)
+    search_results = web_data_service.web_search_with_3rd_party(search_query)
     return search_results
 
 def process_tool_calls(final_tool_calls):

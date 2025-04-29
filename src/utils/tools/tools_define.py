@@ -7,7 +7,7 @@ from services import image_service, web_data_service
 class ToolFunction(Enum):
     GENERATE_IMAGE = image_service.generate_image_url.__name__
     READ_WEB_URL = web_data_service.read_web_url.__name__
-    SEARCH_WEB = web_data_service.search_web.__name__
+    SEARCH_WEB = web_data_service.web_search_with_3rd_party.__name__
 
 def create_tool(function: callable) -> dict:
     """Creates a standardized tool dictionary."""
@@ -31,6 +31,6 @@ tools = [
         function=web_data_service.read_web_url,
     ),
     create_tool(
-        function=web_data_service.search_web,
+        function=web_data_service.web_search_with_3rd_party,
     ),
 ]
