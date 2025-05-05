@@ -2,8 +2,10 @@ import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from models.requests.chat_request import ChatRequest
+from models.responses.base_exception_response import BaseExceptionResponse
 from models.responses.base_response import BaseResponse
 from services import chat_service
+from services.process_file_service import get_file_content
 
 router = APIRouter(tags=["Chat"])
 
@@ -21,7 +23,7 @@ async def chat_stream(request: ChatRequest):
     try:
         stream = chat_service.chat_generate_stream(request=request)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise BaseExceptionResponse(message=str(e))
     
     async def event_generator():
         for chunk in stream:
