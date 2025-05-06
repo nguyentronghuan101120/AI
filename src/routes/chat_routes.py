@@ -1,7 +1,6 @@
 import json
-from typing import AsyncGenerator
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from models.requests.chat_request import ChatRequest
 from models.responses.base_exception_response import BaseExceptionResponse
@@ -12,7 +11,7 @@ from services.process_file_service import get_file_content
 router = APIRouter(tags=["Chat"])
 
 @router.post("/chat/stream", summary="Stream chat response", response_model_exclude_unset=True)
-async def chat_stream(request: ChatRequest):
+def chat_stream(request: ChatRequest):
     """
     Stream a chat response based on the given prompt for real-time updates.
 
@@ -30,12 +29,11 @@ async def chat_stream(request: ChatRequest):
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))
     
-    async def event_generator():
+    def event_generator():
         for chunk in stream:
             chunk_dict = json.loads(chunk.model_dump_json()) 
             response = BaseResponse(data=chunk_dict).model_dump()
             yield f"{json.dumps(response, ensure_ascii=False)}\n\n"
-    
     return StreamingResponse(event_generator(), media_type='text/event-stream')
 
 @router.post("/chat", summary="Non-streaming chat response", response_model_exclude_unset=True)
