@@ -29,9 +29,7 @@ async def upload_file(file: UploadFile = File(...), chat_session_id: str | None 
         
         splitter_and_save_to_database(file_id, ext, chat_session_id)
         
-        return BaseResponse(message="File uploaded successfully", data={
-            "chat_session_id": chat_session_id
-        })
+        return BaseResponse(message="File uploaded successfully", data=chat_session_id)
         
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))

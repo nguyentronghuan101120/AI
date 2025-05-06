@@ -22,7 +22,7 @@ async def get_vector_stores():
     """
     try:
         collections = vector_store_service.get_all_collections_id()
-        return BaseResponse(data=[collections])
+        return BaseResponse(data=collections)
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))
 

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class ChatRequest(BaseModel):
     prompt: list[dict]
-    hasFile: bool = False
+    has_file: bool = False
     chat_session_id: str | None = None
     
     model_config = {
@@ -11,7 +11,7 @@ class ChatRequest(BaseModel):
             "examples": [
                 {
                     "prompt": [{"role": "user", "content": "Hello, how are you?"}],
-                    "hasFile": False,
+                    "has_file": False,
                     "chat_session_id": "123"
                 }
             ]
