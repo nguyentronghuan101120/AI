@@ -1,4 +1,6 @@
 import json
+from typing import AsyncGenerator
+import uuid
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from models.requests.chat_request import ChatRequest
@@ -21,6 +23,9 @@ async def chat_stream(request: ChatRequest):
         StreamingResponse: A stream of the generated chat response.
     """
     try:
+        if(request.chat_session_id is None):
+            request.chat_session_id = str(uuid.uuid4())
+        
         stream = chat_service.chat_generate_stream(request=request)
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))
@@ -32,3 +37,23 @@ async def chat_stream(request: ChatRequest):
             yield f"{json.dumps(response, ensure_ascii=False)}\n\n"
     
     return StreamingResponse(event_generator(), media_type='text/event-stream')
+
+@router.post("/chat", summary="Non-streaming chat response", response_model_exclude_unset=True)
+async def chat(request: ChatRequest):
+    """
+    Get a non-streaming chat response based on the given prompt.
+
+    Args:
+        request (ChatRequest): The chat request containing the prompt.
+
+    Returns:
+        BaseResponse: The complete chat response
+    """
+    if request.chat_session_id is None:
+        request.chat_session_id = str(uuid.uuid4())
+
+    try:
+        response = chat_service.chat_generate(request=request)
+        return BaseResponse(data=json.loads(response.model_dump_json()))
+    except Exception as e:
+        raise BaseExceptionResponse(message=str(e))
