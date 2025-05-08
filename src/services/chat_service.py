@@ -17,7 +17,7 @@ def build_context_prompt(request: ChatRequest) -> list:
     with measure_time("Get data from vector store"):
         vectorstore = vector_store_service.get_vector_store(request.chat_session_id)
         query = request.prompt[-1]["content"]
-        results = vectorstore.similarity_search(query=query, k=5)
+        results = vectorstore.similarity_search(query=query, k=10)
 
     if not results:
         return messages
@@ -25,12 +25,14 @@ def build_context_prompt(request: ChatRequest) -> list:
     with measure_time("Building context prompt"):
         context = ''
     for document in results:
+        # print(f"Document:{document.page_content[:50]}, score:{score}\n\n")
         source = document.metadata.get('file_id', 'Unknown File')
         context += f"Context from file: {source}\n\n{document.page_content}\n\n"
 
     embedded_prompt = (
-        "Use the following CONTEXT to answer the QUESTION at the end.\n"
+        "Use the following CONTEXT to answer the QUESTION.\n"
         "If you don't know the answer or are unsure, just say that you don't know.\n"
+        "If question is empty or nothing, please summarize the context.\n"
         "Use an unbiased and journalistic tone.\n\n"
         f"CONTEXT: {context}\nQUESTION: {query}"
     )

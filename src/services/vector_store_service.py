@@ -22,7 +22,7 @@ def inspect_collection(collection_id: str):
     results = collection.get()
     return results
 
-def get_vector_store(collection_name):
+def get_vector_store(collection_name) -> Chroma:
     if collection_name not in vector_store:
         vector_store[collection_name] = Chroma(
             persist_directory="./data", 
