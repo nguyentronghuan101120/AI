@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-
 class ChatRequest(BaseModel):
     prompt: list[dict]
     has_file: bool = False
