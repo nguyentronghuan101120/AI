@@ -12,7 +12,7 @@ FROM python:3.11-slim
 # Prevents Python from writing .pyc files (not needed in containers) and ensures logs are output directly.
 
 # 3. Set the working directory in the container
-WORKDIR /app
+WORKDIR /src
 
 # What is this?
 # All subsequent commands will run in /app. Keeps the container organized.
@@ -44,19 +44,19 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # 6. Copy the rest of the application code
 COPY ./src ./src
-COPY ./readme.md .
+COPY ./README.md .
 
 # What is this?
 # Copies your source code and readme into the container.
 
 # 7. Expose the port FastAPI will run on
-EXPOSE 80
+EXPOSE 7860
 
 # What is this?
 # Documents that the container will listen on port 8080 (matches your uvicorn command).
 
 # 8. Set the default command to run the FastAPI app
-CMD ["fastapi", "run", "src/main.py", "--port", "80"]
+CMD ["fastapi", "run", "src/main.py", "--port", "7860"]
 
 # What is this?
 # This starts your FastAPI app using Uvicorn, making it accessible from outside the container.
