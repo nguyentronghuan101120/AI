@@ -1,15 +1,12 @@
 ---
-title: AI Assistance
-emoji: ⚡
-colorFrom: gray
-colorTo: yellow
-sdk: docker
-app_port: 7860
+title: { { title } }
+emoji: { { emoji } }
+colorFrom: { { colorFrom } }
+colorTo: { { colorTo } }
+sdk: { { sdk } }
+sdk_version: "{{sdkVersion}}"
+app_file: app.py
 pinned: false
-short_description: AI Assistant web app using Docker
-tags:
-  - ai
-  - assistant
-  - docker
-  - huggingface-space
 ---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
