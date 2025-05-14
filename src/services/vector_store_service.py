@@ -3,7 +3,7 @@ from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import torch
 
-client = PersistentClient(path="./data")
+client = PersistentClient(path="/data")
 # EMBEDDING_MODEL = "intfloat/multilingual-e5-large-instruct"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 _device = (
