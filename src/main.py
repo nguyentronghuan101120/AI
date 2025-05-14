@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,4 +48,5 @@ app.include_router(vector_store_routes.router, prefix="/api/v1")
 def read_root():
     return {"message": "Welcome my API"}
 
+os.makedirs("outputs", exist_ok=True)
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
