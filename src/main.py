@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from constants.config import OUTPUT_DIR
 from models.responses.base_response import BaseResponse
 from routes import chat_routes, process_file_routes, vector_store_routes
 from utils.exception import CustomException
@@ -48,5 +49,5 @@ app.include_router(vector_store_routes.router, prefix="/api/v1")
 def read_root():
     return {"message": "Welcome my API"}
 
-os.makedirs("outputs", exist_ok=True)
-app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+app.mount(OUTPUT_DIR, StaticFiles(directory=OUTPUT_DIR), name="outputs")

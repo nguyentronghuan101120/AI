@@ -6,11 +6,9 @@ from PIL import Image
 import pytesseract
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from constants.config import UPLOAD_DIR
 from constants.file_type import FileType
 from services import vector_store_service
-
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def save_file(file):
     ext = os.path.splitext(file.filename)[-1].lstrip(".")

@@ -43,8 +43,8 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 # Installs all Python dependencies listed in requirements.txt. --no-cache-dir reduces image size.
 
 # 6. Copy the rest of the application code
-COPY ./src ./src
-COPY ./README.md .
+# COPY ./src ./src
+# COPY ./README.md .
 
 # What is this?
 # Copies your source code and readme into the container.
@@ -54,6 +54,8 @@ EXPOSE 7860
 
 # What is this?
 # Documents that the container will listen on port 8080 (matches your uvicorn command).
+# Copy toàn bộ mã nguồn
+COPY . .
 
 # 8. Set the default command to run the FastAPI app
 CMD ["fastapi", "run", "src/main.py", "--port", "7860"]

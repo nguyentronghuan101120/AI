@@ -3,8 +3,6 @@ from models.requests.chat_request import ChatRequest
 from services import vector_store_service
 from utils.timing import measure_time
 from utils.tools import tools_helper, tools_define
-from utils.client import openai_client
-
 
 def build_context_prompt(request: ChatRequest) -> list:
     """Build system prompt with context if file is provided."""
