@@ -47,7 +47,7 @@ app.include_router(process_file_routes.router, prefix="/api/v1")
 app.include_router(vector_store_routes.router, prefix="/api/v1")
 @app.get("/")
 def read_root():
-    return {"message": "Welcome my API"}
+    return {"message": "Welcome to my API"}
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 app.mount(OUTPUT_DIR, StaticFiles(directory=OUTPUT_DIR), name="outputs")

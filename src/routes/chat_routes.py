@@ -9,7 +9,6 @@ from models.requests.chat_request import ChatRequest
 from models.responses.base_exception_response import BaseExceptionResponse
 from models.responses.base_response import BaseResponse
 from services import chat_service
-from services.process_file_service import get_file_content
 
 router = APIRouter(tags=["Chat"])
 
@@ -63,7 +62,7 @@ async def chat(request: ChatRequest):
 
     try:
         response = chat_service.chat_generate(request=request)
-        return BaseResponse(data=json.loads(response.model_dump_json()))
+        return BaseResponse(data=response)
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))
     

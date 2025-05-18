@@ -1,13 +1,7 @@
-import json
-import uuid
 from fastapi import APIRouter
-from models.requests.chat_request import ChatRequest
 from models.responses.base_exception_response import BaseExceptionResponse
 from models.responses.base_response import BaseResponse
 from services import  vector_store_service
-from utils.client import openai_client
-import os
-from chromadb import PersistentClient
 
 
 router = APIRouter(tags=["Vector Store"])
