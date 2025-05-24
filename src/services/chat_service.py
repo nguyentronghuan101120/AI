@@ -1,7 +1,12 @@
+from email import message
+
+from flask import message_flashed
 from constants import system_prompts
 from models.requests.chat_request import ChatRequest
+from models.responses.chat_response import ChatResponse
 from services import vector_store_service
-from utils.client import create, create_stream
+
+from utils.llama_cpp_client import create, create_stream
 from utils.timing import measure_time
 from utils.tools import tools_helper, tools_define
 from models.others.message import Message, Role
@@ -50,11 +55,8 @@ def chat_generate_stream(
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    # stream = openai_client.chat.completions.create(
-    #     messages=messages,
-    #     model='my-model',
-    #     stream=True,
-    #     tools=tools_define.tools
+    # stream = open_ai_client.chat.completions.create(
+    #     messages=messages, model="my-model", stream=True, tools=tools_define.tools
     # )
 
     stream = create_stream(messages)
@@ -66,7 +68,7 @@ def chat_generate_stream(
             delta = chunk.choices[0].delta
             if getattr(delta, "tool_calls", None):
                 final_tool_calls = tools_helper.final_tool_calls_handler(
-                    final_tool_calls, delta.tool_calls
+                    final_tool_calls, delta.tool_calls, is_stream=True
                 )
             yield chunk
 
@@ -79,7 +81,11 @@ def chat_generate_stream(
     )
     messages.append(tool_call_message)
 
-    new_stream = create_stream(messages)
+    new_stream = open_ai_client.chat.completions.create(
+        messages=messages, model="my-model", stream=True
+    )
+
+    # new_stream = create_stream(messages)
 
     for chunk in new_stream:
         yield chunk
@@ -90,11 +96,39 @@ def chat_generate(request: ChatRequest):
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    with measure_time("Non-streaming chat generation"):
-        # response = openai_client.chat.completions.create(
-        #     messages=messages,
-        #     model='my-model',
-        #     tools=tools_define.tools
-        # )
-        output = create(messages=messages)
+    # output = open_ai_client.chat.completions.create(
+    #     messages=messages, model="my-model", tools=tools_define.tools
+    # )
+    output = create(messages=messages)
+
+    final_tool_calls = {}
+
+    message = None
+    if output.choices and len(output.choices) > 0:
+        message = output.choices[0].message
+        if (
+            message is not None
+            and getattr(message, "tool_calls", None)
+            and message.tool_calls
+        ):
+            final_tool_calls = tools_helper.final_tool_calls_handler(
+                final_tool_calls=final_tool_calls, tool_calls=message.tool_calls
+            )
+
+    if not final_tool_calls:
         return output
+
+    tool_call_result = tools_helper.process_tool_calls(
+        final_tool_calls=final_tool_calls
+    )
+    tool_call_message = Message(
+        role=Role.tool, content=tool_call_result.get("content", "")
+    )
+    messages.append(tool_call_message)
+
+    new_output = create(messages=messages, has_tool_call=False)
+    # new_output = open_ai_client.chat.completions.create(
+    #     messages=messages, model="my-model", tools=tools_define.tools
+    # )
+
+    return new_output

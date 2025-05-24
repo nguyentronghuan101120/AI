@@ -1,11 +1,8 @@
 from typing import Any, List, Optional
+from click import argument
 from pydantic import BaseModel
 from models.others.message import Message, Role
-
-# class Usage(BaseModel):
-#     prompt_token: int
-#     completion_token: int
-#     total_tokens: int
+from models.responses.tool_call_response import ToolCall
 
 
 class Choice(BaseModel):
@@ -14,6 +11,7 @@ class Choice(BaseModel):
     # finish_reason: Optional[str]
     message: Optional[Message] = None
     delta: Optional[Message] = None
+    function_call: Optional[ToolCall] = None
 
 
 class ChatResponse(BaseModel):
@@ -67,4 +65,36 @@ class ChatResponse(BaseModel):
                 choices=choices,
             ),
             updated_role,
+        )
+
+    @classmethod
+    def from_llm_output(cls, output: dict) -> "ChatResponse":
+        """
+        Map the output dict from llm.create_chat_completion to a ChatResponse instance.
+        """
+        choices = []
+        for choice in output.get("choices", []):
+            message_data = choice.get("message", {})
+            tool_calls_data = message_data.get("tool_calls")
+            tool_calls = None
+            if tool_calls_data:
+                tool_calls = [ToolCall(**tc) for tc in tool_calls_data]
+            message = Message(
+                role=Role(message_data["role"]),
+                content=message_data.get("content"),
+                tool_calls=tool_calls,
+            )
+            # function_call is for OpenAI compatibility, may be None
+            function_call = None
+            if "function_call" in choice:
+                function_call = ToolCall(**choice["function_call"])
+            choices.append(
+                Choice(
+                    message=message,
+                    function_call=function_call,
+                )
+            )
+        return cls(
+            id=output.get("id"),
+            choices=choices,
         )

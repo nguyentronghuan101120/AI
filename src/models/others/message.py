@@ -1,7 +1,9 @@
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
+
+from models.responses.tool_call_response import ToolCall
 
 
 class Role(str, Enum):
@@ -14,9 +16,7 @@ class Role(str, Enum):
 class Message(BaseModel):
     role: Role
     content: Optional[str] = None
+    tool_calls: Optional[List[ToolCall]] = None
 
     def to_map(self):
-        return {
-            "role": self.role.value,
-            "content": self.content,
-        }
+        return self.model_dump(exclude_none=True)
