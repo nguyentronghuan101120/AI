@@ -1,13 +1,13 @@
 from chromadb import PersistentClient
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from constants.config import DATA_DIR, EMBEDDING_MODEL, TORCH_DEVICE
+from constants.config import CACHE_DIR, DATA_DIR, EMBEDDING_MODEL, TORCH_DEVICE
 
 client = PersistentClient(path=DATA_DIR)
 embeddings_function = HuggingFaceEmbeddings(
     model_name=EMBEDDING_MODEL,
     model_kwargs={"device": TORCH_DEVICE},
-    cache_folder="/src/cache/huggingface",
+    cache_folder=CACHE_DIR,
 )
 vector_store = {}
 
