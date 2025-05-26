@@ -21,8 +21,8 @@ RUN apt-get update && \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /data/cache /data/vector_store /.cache && \
-    chown -R 1000:1000 /data /.cache
+RUN mkdir -p /tmp/cache /tmp/vector_store /.cache && \
+    chown -R 1000:1000 /tmp /.cache
 
 # 5. Copy requirements.txt and install Python dependencies
 COPY requirements.txt .
