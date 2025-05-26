@@ -29,7 +29,7 @@ COPY requirements.txt .
 # RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Install llama-cpp-python first (faster rebuilds)
-RUN pip install --no-cache-dir "llama-cpp-python==0.3.8"
+RUN pip install --no-cache-dir "llama-cpp-python==0.3.8" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 
 # Remove llama line from requirements and install the rest
 RUN grep -v "llama-cpp-python" requirements.txt > requirements-no-llama.txt && \
