@@ -1,13 +1,12 @@
 from chromadb import PersistentClient
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from constants.config import CACHE_DIR, DATA_DIR, EMBEDDING_MODEL, TORCH_DEVICE
+from constants.config import VECTOR_STORE_DIR, EMBEDDING_MODEL, TORCH_DEVICE
 
-client = PersistentClient(path=DATA_DIR)
+client = PersistentClient(path=VECTOR_STORE_DIR)
 embeddings_function = HuggingFaceEmbeddings(
     model_name=EMBEDDING_MODEL,
     model_kwargs={"device": TORCH_DEVICE},
-    cache_folder=CACHE_DIR,
 )
 vector_store = {}
 
@@ -25,7 +24,7 @@ def inspect_collection(collection_id: str):
 def get_vector_store(collection_name) -> Chroma:
     if collection_name not in vector_store:
         vector_store[collection_name] = Chroma(
-            persist_directory=DATA_DIR,
+            persist_directory=VECTOR_STORE_DIR,
             collection_name=collection_name,
             embedding_function=embeddings_function,
         )
