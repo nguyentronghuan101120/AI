@@ -1,7 +1,9 @@
 fastapi[standard] == 0.114.0
-torch == 2.6.0
+torch==2.7.0
+--extra-index-url https://download.pytorch.org/whl/cu128
 diffusers == 0.33.1
 llama-cpp-python == 0.3.8
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 beautifulsoup4 == 4.13.4
 requests == 2.32.3
 langchain_chroma == 0.2.2

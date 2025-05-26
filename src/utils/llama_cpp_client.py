@@ -1,15 +1,32 @@
 import os
-import platform
-import subprocess
-from tabnanny import verbose
 from typing import Generator, List
 import llama_cpp
-import torch
 from constants.config import FILE_NAME, REPO_ID
 from models.others.message import Message
 from models.responses.chat_response import ChatResponse
 from utils.timing import measure_time
 from utils.tools import tools_define
+
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("modularai/Llama-3.1-8B-Instruct-GGUF")
+
+
+def messages_to_prompt(messages):
+    messages = [{"role": m.role.value, "content": m.content} for m in messages]
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    return prompt
+
+
+def completion_to_prompt(completion):
+    messages = [{"role": "user", "content": completion}]
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    return prompt
+
 
 # llm = llama_cpp.Llama(
 #     model_path=FILE_NAME,
@@ -27,7 +44,10 @@ llm = llama_cpp.Llama.from_pretrained(
     n_gpu_layers=-1,
     n_ctx=4096,
     verbose=True,
+    messages_to_prompt=messages_to_prompt,
+    completion_to_prompt=completion_to_prompt,
 )
+
 
 def create(messages: List[Message], has_tool_call: bool = True):
     prompt = [message.to_map() for message in messages]
