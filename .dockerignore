@@ -1,27 +1,41 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyw
-*.pyz
+
+**pycache**/
+_.py[cod]
+_.pyo
+_.pyw
+_.pyz
 
 # Distribution / packaging
-*.egg-info/
+
+\*.egg-info/
 
 # OS files
+
 .DS_Store
 
 # Environment files
+
 .env
-.env.*
+.env.\*
 
 # Project data and outputs
+
 outputs/
 uploads/
 data/
 
 # VSCode settings
+
 .vscode/
 
 # Git
+
 .git/
+
+.venv
+.idea
+.vscode
+\*.md
+.git
+.env

@@ -7,25 +7,25 @@ from models.responses.chat_response import ChatResponse
 from utils.timing import measure_time
 from utils.tools import tools_define
 
-from transformers import AutoTokenizer
+# from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("modularai/Llama-3.1-8B-Instruct-GGUF")
-
-
-def messages_to_prompt(messages):
-    messages = [{"role": m.role.value, "content": m.content} for m in messages]
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    return prompt
+# tokenizer = AutoTokenizer.from_pretrained("modularai/Llama-3.1-8B-Instruct-GGUF")
 
 
-def completion_to_prompt(completion):
-    messages = [{"role": "user", "content": completion}]
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    return prompt
+# def messages_to_prompt(messages):
+#     messages = [{"role": m.role.value, "content": m.content} for m in messages]
+#     prompt = tokenizer.apply_chat_template(
+#         messages, tokenize=False, add_generation_prompt=True
+#     )
+#     return prompt
+
+
+# def completion_to_prompt(completion):
+#     messages = [{"role": "user", "content": completion}]
+#     prompt = tokenizer.apply_chat_template(
+#         messages, tokenize=False, add_generation_prompt=True
+#     )
+#     return prompt
 
 
 # llm = llama_cpp.Llama(
@@ -44,8 +44,8 @@ llm = llama_cpp.Llama.from_pretrained(
     n_gpu_layers=-1,
     n_ctx=4096,
     verbose=True,
-    messages_to_prompt=messages_to_prompt,
-    completion_to_prompt=completion_to_prompt,
+    # messages_to_prompt=messages_to_prompt,
+    # completion_to_prompt=completion_to_prompt,
 )
 
 
@@ -60,11 +60,11 @@ def create(messages: List[Message], has_tool_call: bool = True):
     try:
         with measure_time("Starting create chat completion"):
             output = llm.create_chat_completion(
-                prompt,
-                tools=tools,
+                prompt,  # type: ignore
+                tools=tools,  # type: ignore
                 tool_choice=tool_choice,
             )  # type: ignore
-            return ChatResponse.from_llm_output(output)
+            return ChatResponse.from_llm_output(output)  # type: ignore
     except Exception as e:
         print(f"Error in create chat completion: {str(e)}")
         raise
@@ -74,9 +74,9 @@ def create_stream(messages: List[Message]) -> Generator[ChatResponse, None, None
     prompt = [message.to_map() for message in messages]
 
     output = llm.create_chat_completion(
-        prompt,
+        prompt,  # type: ignore
         stream=True,
-        tools=tools_define.tools,
+        tools=tools_define.tools,  # type: ignore
         tool_choice="auto",
     )  # type: ignore
     last_role = None

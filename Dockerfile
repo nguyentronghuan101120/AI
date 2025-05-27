@@ -35,8 +35,9 @@ RUN pip install --no-cache-dir "llama-cpp-python==0.3.8" --extra-index-url https
 RUN grep -v "llama-cpp-python" requirements.txt > requirements-no-llama.txt && \
     pip install --no-cache-dir -r requirements-no-llama.txt
 
-# 6. Copy the rest of the application code
-COPY . .
+# 6. Copy only necessary files and folders
+COPY requirements.txt .
+COPY src/ ./src
 
 # 7. Expose the port FastAPI will run on
 EXPOSE 7860
