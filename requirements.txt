@@ -12,3 +12,5 @@ langchain_community == 0.3.19
 accelerate == 1.6.0
 chromadb == 0.6.3
 pymupdf == 1.25.1
+bitsandbytes == 0.46.0
+# gguf == 0.16.3

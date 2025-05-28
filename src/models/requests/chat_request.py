@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
-from constants.config import MODEL_NAME
+from constants.config import LLM_MODEL_NAME
 from models.others.message import Role, Message
 
 

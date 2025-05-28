@@ -1,19 +1,38 @@
 import os
 from threading import Thread
 from typing import Generator, List
+import torch
 from transformers.models.auto.modeling_auto import AutoModelForCausalLM
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from constants.config import MODEL_NAME, TORCH_DEVICE
+from constants.config import GGUF_FILE_NAME, LLM_MODEL_NAME, GGUF_REPO_ID, TORCH_DEVICE, USE_QUANT
 from models.others.message import Message, Role
 from models.responses.chat_response import ChatResponse
 from transformers.generation.streamers import TextIteratorStreamer
 from utils.timing import measure_time
 from utils.tools import tools_define
+from transformers.utils.quantization_config import BitsAndBytesConfig
 
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME, torch_dtype="auto", device_map="auto"
-)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+if(USE_QUANT):
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype="float16",
+        bnb_4bit_use_double_quant=True,
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        LLM_MODEL_NAME,
+        torch_dtype="auto",
+        device_map="auto",
+        quantization_config=quantization_config,
+    )
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        LLM_MODEL_NAME,
+        torch_dtype="auto",
+        device_map="auto",  # hoặc "cpu" nếu bạn muốn ép về CPU
+    )
+
+tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
 
 
 def build_prompt(messages: List[Message]) -> str:
@@ -28,11 +47,6 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
     # Prepare tools if enabled
     tools = tools_define.tools if has_tool_call else None
     tool_choice = "auto" if has_tool_call else "none"
-    
-    inputs = tokenizer.apply_chat_template(messages, tools=tools, add_generation_prompt=True, return_dict=True, return_tensors="pt").to(TORCH_DEVICE)
-    inputs = {k: v for k, v in inputs.items()}
-    out = model.generate(**inputs, max_new_tokens=128)
-    print(tokenizer.decode(out[0][len(inputs["input_ids"][0]):]))
 
     # Apply chat template
     formatted_prompt = tokenizer.apply_chat_template(
@@ -41,9 +55,7 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
         tool_choice=tool_choice,
         tokenize=False,
         add_generation_prompt=True,
-        # return_dict=True,
     )
-
 
     print("Starting create chat completion")
     try:
@@ -60,7 +72,9 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
                 eos_token_id=tokenizer.eos_token_id,
             )
             # Decode response
-            output_text = tokenizer.decode(output_ids[0][len(inputs["input_ids"][0]):])
+            output_text = tokenizer.decode(
+                output_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
+            )
 
             # Create ChatResponse using from_llm_output
             return ChatResponse.from_llm_output(

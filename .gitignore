@@ -12,3 +12,5 @@ uploads/*
 data/*
 venv/
 .venv/
+bitsandbytes/*
+llama-cpp-python/*
