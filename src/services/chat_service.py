@@ -1,12 +1,13 @@
 from constants import system_prompts
 from models.requests.chat_request import ChatRequest
-from models.responses.chat_response import ChatResponse
 from services import vector_store_service
 
-from utils.llama_cpp_client import create, create_stream
+# from utils.llama_cpp_client import create, create_stream
+from utils import open_ai_client
 from utils.timing import measure_time
 from utils.tools import tools_helper, tools_define
 from models.others.message import Message, Role
+from utils.transformer_client import generate, generate_stream
 
 
 def build_context_prompt(request: ChatRequest) -> list[Message]:
@@ -56,7 +57,7 @@ def chat_generate_stream(
     #     messages=messages, model="my-model", stream=True, tools=tools_define.tools
     # )
 
-    stream = create_stream(messages)
+    stream = generate_stream(messages)
 
     final_tool_calls = {}
 
@@ -78,11 +79,11 @@ def chat_generate_stream(
     )
     messages.append(tool_call_message)
 
-    new_stream = open_ai_client.chat.completions.create(
-        messages=messages, model="my-model", stream=True
-    )
+    # new_stream = open_ai_client.chat.completions.create(
+    #     messages=messages, model="my-model", stream=True
+    # )
 
-    # new_stream = create_stream(messages)
+    new_stream = generate_stream(messages)
 
     for chunk in new_stream:
         yield chunk
@@ -93,10 +94,10 @@ def chat_generate(request: ChatRequest):
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    # output = open_ai_client.chat.completions.create(
+    # output = open_ai_client.open_ai_client.chat.completions.create(
     #     messages=messages, model="my-model", tools=tools_define.tools
     # )
-    output = create(messages=messages)
+    output = generate(messages=messages)
 
     final_tool_calls = {}
 
@@ -123,7 +124,7 @@ def chat_generate(request: ChatRequest):
     )
     messages.append(tool_call_message)
 
-    new_output = create(messages=messages, has_tool_call=False)
+    new_output = generate(messages=messages, has_tool_call=False)
     # new_output = open_ai_client.chat.completions.create(
     #     messages=messages, model="my-model", tools=tools_define.tools
     # )

@@ -7,7 +7,7 @@ TORCH_DEVICE = (
     else "mps" if torch.backends.mps.is_available() else "cpu"
 )
 IMAGE_MODEL_ID_OR_LINK = "stable-diffusion-v1-5/stable-diffusion-v1-5"
-MODEL_NAME = "facebook/opt-125m"
+MODEL_NAME = "NousResearch/Hermes-2-Pro-Llama-3-8B"
 CACHE_DIR = "/tmp/cache"
 VECTOR_STORE_DIR = "/tmp/vector_store"
 # EMBEDDING_MODEL = "intfloat/multilingual-e5-large-instruct"

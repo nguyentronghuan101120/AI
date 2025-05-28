@@ -6,9 +6,6 @@ from models.responses.tool_call_response import ToolCall
 
 
 class Choice(BaseModel):
-    # index: int
-    # logprobs: Any
-    # finish_reason: Optional[str]
     message: Optional[Message] = None
     delta: Optional[Message] = None
     function_call: Optional[ToolCall] = None
@@ -16,11 +13,6 @@ class Choice(BaseModel):
 
 class ChatResponse(BaseModel):
     id: Optional[str] = None
-    # object: Optional[str] = None
-    # created: Optional[int] = None
-    # model: Optional[str] = None
-    # system_fingerprint: Optional[str] = None
-    # usage: Optional[Usage] = None
     choices: Optional[List[Choice]] = None
 
     @classmethod
