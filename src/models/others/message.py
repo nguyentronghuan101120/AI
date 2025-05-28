@@ -19,4 +19,6 @@ class Message(BaseModel):
     tool_calls: Optional[List[ToolCall]] = None
 
     def to_map(self):
-        return self.model_dump(exclude_none=True)
+        data = self.model_dump(exclude_none=True)
+        data["role"] = self.role.value
+        return data
