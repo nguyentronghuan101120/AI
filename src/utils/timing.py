@@ -1,10 +1,12 @@
 import time
 
+
 class measure_time:
     def __init__(self, label="Operation"):
         self.label = label
 
     def __enter__(self):
+        print(f"\nStart: {self.label}")
         self.start = time.time()
         return self
 

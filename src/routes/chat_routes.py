@@ -70,9 +70,7 @@ async def chat(request: ChatRequest):
     try:
         response = chat_service.chat_generate(request=request)
         return BaseResponse(
-            data=json.loads(
-                response.model_dump_json(),
-            ),
+            data=response,
         )
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))

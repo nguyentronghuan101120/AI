@@ -1,34 +1,27 @@
-# import torch
-# from diffusers import StableDiffusionPipeline
-# from constants.config import IMAGE_MODEL_ID_OR_LINK, TORCH_DEVICE
+import torch
+from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion import (
+    StableDiffusionPipeline,
+)
+from constants.config import IMAGE_MODEL_ID_OR_LINK, TORCH_DEVICE
+from utils.timing import measure_time
 
-# torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for performance on CUDA
+torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for performance on CUDA
 
-# _pipeline = None
-
-
-# def get_pipeline() -> StableDiffusionPipeline:
-#     global _pipeline
-#     if _pipeline is None:
-#         try:
-#             _pipeline = StableDiffusionPipeline.from_pretrained(
-#                 IMAGE_MODEL_ID_OR_LINK,
-#                 torch_dtype=torch.bfloat16,
-#                 variant="fp16",
-#                 # safety_checker=True,
-#                 use_safetensors=True,
-#             )
-#             # _pipeline = StableDiffusionPipeline.from_single_file(
-#             #     IMAGE_MODEL_ID_OR_LINK,
-#             #     torch_dtype=torch.bfloat16,
-#             #     variant="fp16",
-#             #     # safety_checker=True,
-#             #     use_safetensors=True,
-#             # )
-#             _pipeline.to(TORCH_DEVICE)
-#         except Exception as e:
-#             raise RuntimeError(f"Failed to load the model: {e}")
-#     return _pipeline
+pipeline = None
 
 
-# pipeline = get_pipeline()
+def load_pipeline():
+    global pipeline
+    with measure_time("Load image pipeline"):
+        pipeline = StableDiffusionPipeline.from_pretrained(
+            IMAGE_MODEL_ID_OR_LINK,
+            torch_dtype=torch.bfloat16,
+            variant="fp16",
+            # safety_checker=True,
+            use_safetensors=True,
+        )
+
+
+def clear_resources():
+    global pipeline
+    pipeline = None
