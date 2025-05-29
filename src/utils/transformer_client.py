@@ -4,7 +4,15 @@ from typing import Generator, List
 import torch
 from transformers.models.auto.modeling_auto import AutoModelForCausalLM
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from constants.config import GGUF_FILE_NAME, LLM_MODEL_NAME, GGUF_REPO_ID, TORCH_DEVICE, USE_QUANT
+from constants.config import (
+    GGUF_FILE_NAME,
+    LLM_MODEL_NAME,
+    GGUF_REPO_ID,
+    TORCH_DEVICE,
+    USE_QUANT,
+    MODEL_OPTIMIZATION,
+    IS_APPLE_SILICON,
+)
 from models.others.message import Message, Role
 from models.responses.chat_response import ChatResponse
 from transformers.generation.streamers import TextIteratorStreamer
@@ -12,27 +20,36 @@ from utils.timing import measure_time
 from utils.tools import tools_define
 from transformers.utils.quantization_config import BitsAndBytesConfig
 
-if(USE_QUANT):
+# Configure model loading based on device
+if USE_QUANT:
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype="float16",
+        bnb_4bit_compute_dtype=MODEL_OPTIMIZATION["torch_dtype"],
         bnb_4bit_use_double_quant=True,
     )
     model = AutoModelForCausalLM.from_pretrained(
         LLM_MODEL_NAME,
-        torch_dtype="auto",
+        torch_dtype=MODEL_OPTIMIZATION["torch_dtype"],
         device_map="auto",
         quantization_config=quantization_config,
+        low_cpu_mem_usage=MODEL_OPTIMIZATION["low_cpu_mem_usage"],
+        use_cache=MODEL_OPTIMIZATION["use_cache"],
     )
 else:
     model = AutoModelForCausalLM.from_pretrained(
         LLM_MODEL_NAME,
-        torch_dtype="auto",
-        device_map="auto",  # hoặc "cpu" nếu bạn muốn ép về CPU
+        torch_dtype=MODEL_OPTIMIZATION["torch_dtype"],
+        device_map="auto",
+        low_cpu_mem_usage=MODEL_OPTIMIZATION["low_cpu_mem_usage"],
+        use_cache=MODEL_OPTIMIZATION["use_cache"],
     )
 
-tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
+# Configure tokenizer with appropriate settings
+tokenizer = AutoTokenizer.from_pretrained(
+    LLM_MODEL_NAME,
+    use_fast=True,  # Use fast tokenizer for better performance
+)
 
 
 def build_prompt(messages: List[Message]) -> str:
@@ -43,7 +60,6 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
     # Convert messages to prompt
     prompt = [message.to_map() for message in messages]
 
-    # prompt = build_prompt(messages)
     # Prepare tools if enabled
     tools = tools_define.tools if has_tool_call else None
     tool_choice = "auto" if has_tool_call else "none"
@@ -60,9 +76,16 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
     print("Starting create chat completion")
     try:
         with measure_time("Starting create chat completion"):
-            # Tokenize input
-            inputs = tokenizer(formatted_prompt, return_tensors="pt").to(TORCH_DEVICE)
-            # Generate response
+            # Tokenize input with optimized settings
+            inputs = tokenizer(
+                formatted_prompt,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=2048,  # Adjust based on your needs
+            ).to(TORCH_DEVICE)
+
+            # Generate response with optimized settings
             output_ids = model.generate(
                 **inputs,
                 max_new_tokens=4096,
@@ -70,10 +93,13 @@ def generate(messages: List[Message], has_tool_call: bool = True) -> ChatRespons
                 temperature=0.7,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
+                use_cache=True,  # Enable KV cache for faster generation
+                num_beams=1,  # Use greedy decoding for faster inference
             )
+
             # Decode response
             output_text = tokenizer.decode(
-                output_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
+                output_ids[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
             )
 
             # Create ChatResponse using from_llm_output
@@ -99,21 +125,31 @@ def generate_stream(messages: List[Message]) -> Generator[ChatResponse, None, No
     prompt = [message.to_map() for message in messages]
     # Prepare tools
     tools = tools_define.tools
-    # Apply chat template
-    # formatted_prompt = tokenizer.apply_chat_template(
-    #     prompt,
-    #     tools=tools,
-    #     tool_choice="auto",
-    #     tokenize=False,
-    #     add_generation_prompt=True,
-    # )
-    try:
-        # Tokenize input
-        inputs = tokenizer(prompt, return_tensors="pt").to(TORCH_DEVICE)
-        # Generate streaming output
 
+    # Apply chat template
+    formatted_prompt = tokenizer.apply_chat_template(
+        prompt,
+        tools=tools,
+        tool_choice="auto",
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    try:
+        # Tokenize input with optimized settings
+        inputs = tokenizer(
+            prompt,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=4096,  # Adjust based on your needs
+        ).to(TORCH_DEVICE)
+
+        # Generate streaming output
         streamer = TextIteratorStreamer(
-            tokenizer, skip_prompt=True, skip_special_tokens=True
+            tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
         )
 
         generation_kwargs = dict(
@@ -124,6 +160,8 @@ def generate_stream(messages: List[Message]) -> Generator[ChatResponse, None, No
             temperature=0.7,
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
+            use_cache=True,  # Enable KV cache for faster generation
+            num_beams=1,  # Use greedy decoding for faster inference
         )
 
         # Generate in background thread

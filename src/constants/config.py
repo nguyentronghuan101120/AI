@@ -1,12 +1,23 @@
 # Device setup
 import torch
 
-TORCH_DEVICE = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps" if torch.backends.mps.is_available() else "cpu"
-)
-USE_QUANT = torch.cuda.is_available()
+# Check for Apple Silicon
+IS_APPLE_SILICON = torch.backends.mps.is_available()
+IS_CUDA_AVAILABLE = torch.cuda.is_available()
+
+# Set device priority: CUDA > MPS > CPU
+TORCH_DEVICE = "cuda" if IS_CUDA_AVAILABLE else "mps" if IS_APPLE_SILICON else "cpu"
+
+# Enable quantization for CPU/MPS
+USE_QUANT = IS_CUDA_AVAILABLE
+
+# Model optimization settings
+MODEL_OPTIMIZATION = {
+    "use_cache": True,
+    "low_cpu_mem_usage": True,
+    "torch_dtype": torch.float16 if IS_APPLE_SILICON else torch.float32,
+}
+
 IMAGE_MODEL_ID_OR_LINK = "stable-diffusion-v1-5/stable-diffusion-v1-5"
 LLM_MODEL_NAME = "NousResearch/Hermes-2-Pro-Llama-3-8B"
 CACHE_DIR = "/tmp/cache"
