@@ -19,7 +19,7 @@ MODEL_OPTIMIZATION = {
 }
 
 IMAGE_MODEL_ID_OR_LINK = "stable-diffusion-v1-5/stable-diffusion-v1-5"
-LLM_MODEL_NAME = "NousResearch/Hermes-2-Pro-Llama-3-8B"
+LLM_MODEL_NAME = "NousResearch/Hermes-3-Llama-3.1-8B" 
 CACHE_DIR = "/tmp/cache"
 VECTOR_STORE_DIR = "/tmp/vector_store"
 # EMBEDDING_MODEL = "intfloat/multilingual-e5-large-instruct"

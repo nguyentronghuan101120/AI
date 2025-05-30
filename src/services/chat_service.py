@@ -52,36 +52,28 @@ def chat_generate_stream(
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    # stream = open_ai_client.chat.completions.create(
-    #     messages=messages, model="my-model", stream=True, tools=tools_define.tools
-    # )
-
-    stream = generate_stream(messages)
-
-    final_tool_calls = {}
+    # stream = generate_stream(messages)
+    stream = open_ai_client.generate_stream(messages=messages, has_tool_call=True)
+    
+    tool_calls = []
 
     for chunk in stream:
         choices = chunk.get("choices", [])
         if choices and choices[0].get("delta", {}).get("tool_calls"):
             delta = choices[0]["delta"]
-            final_tool_calls = tools_helper.final_tool_calls_handler(
-                final_tool_calls, delta["tool_calls"], is_stream=True
-            )
+            tool_calls.extend(delta["tool_calls"])
         yield chunk
 
-    if not final_tool_calls:
+    if not tool_calls:
         return
 
-    tool_call_result = tools_helper.process_tool_calls(final_tool_calls)
+    tool_call_result = tools_helper.process_tool_calls(tool_calls)
     tool_call_message = {"role": "tool", "content": tool_call_result.get("content", "")}
     messages.append(tool_call_message)
 
-    # new_stream = open_ai_client.chat.completions.create(
-    #     messages=messages, model="my-model", stream=True
-    # )
 
-    new_stream = generate_stream(messages)
-
+    # new_stream = generate_stream(messages)
+    new_stream = open_ai_client.generate_stream(messages=messages, has_tool_call=False)
     for chunk in new_stream:
         yield chunk
 
@@ -91,10 +83,7 @@ def chat_generate(request: ChatRequest):
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    output = open_ai_client.open_ai_client.chat.completions.create(
-        messages=messages, model="my-model", tools=tools_define.tools
-    ).model_dump()
-    # output = generate(messages=messages)
+    output = open_ai_client.generate(messages=messages)
     choices = output.get("choices", [])
 
     tool_calls = choices[0].get("message").get("tool_calls")
@@ -109,8 +98,5 @@ def chat_generate(request: ChatRequest):
     messages.append(tool_call_message)
 
     # new_output = generate(messages=messages, has_tool_call=False)
-    new_output = open_ai_client.open_ai_client.chat.completions.create(
-        messages=messages, model="my-model"
-    ).model_dump()
-
+    new_output = open_ai_client.generate(messages=messages, has_tool_call=False)
     return new_output

@@ -1,5 +1,7 @@
 import json
+import re
 from typing import List
+import uuid
 from utils.tools.tools_define import ToolFunction
 from services import image_service, web_data_service
 
@@ -14,7 +16,7 @@ def extract_tool_args(tool_call):
     Returns:
         dict: The extracted arguments as a dictionary
     """
-    return json.loads(tool_call.get("function", {}).get("arguments", "{}"))
+    return tool_call.get("function", {}).get("arguments", "{}")
 
 
 def handle_web_data_tool_call(tool_call):
@@ -103,27 +105,36 @@ def process_tool_calls(tool_calls):
     }
 
 
-def final_tool_calls_handler(
-    final_tool_calls: dict, tool_calls: List[dict], is_stream: bool = False
-):
+def extract_tool_calls_and_reupdate_output(text: str):
     """
-    Handle and combine multiple tool calls.
-
-    Args:
-        final_tool_calls (dict): Existing tool calls dictionary
-        tool_calls (list): New tool calls to process
-
-    Returns:
-        dict: Updated tool calls dictionary with combined arguments
+    Extracts all valid JSON objects found within <tool_call>{...}</tool_call> patterns.
+    Removes newlines and returns cleaned text and tool calls.
     """
-    for index, tool_call in enumerate(tool_calls):
-        if index not in final_tool_calls:
-            final_tool_calls[index] = tool_call
-        elif tool_call.get("function") is not None:
-            if is_stream:
-                if "function" in final_tool_calls[index] and "arguments" in final_tool_calls[index]["function"]:
-                    final_tool_calls[index]["function"]["arguments"] += tool_call.get("function", {}).get("arguments", "")
-            else:
-                if "function" in final_tool_calls[index]:
-                    final_tool_calls[index]["function"]["arguments"] = tool_call.get("function", {}).get("arguments", "")
-    return final_tool_calls
+    if text is None:
+        return "", []
+    
+    tool_calls = []
+
+    # Match any <tool_call> JSON-like structure (greedy to match full JSON block)
+    pattern = r"<tool_call>\s*(\{.*?\})\s*</?tool_call>?"
+
+    matches = list(re.finditer(pattern, text, re.DOTALL))
+
+    for match in matches:
+        try:
+            tool_call = {}
+            tool_call["id"] = str(uuid.uuid4())
+            tool_call["type"] = "function"
+            json_content = json.loads(match.group(1))
+            tool_call["function"] = {
+                "name": json_content.get("name", ""),
+                "arguments": json_content.get("arguments", {}),
+            }
+            tool_calls.append(tool_call)
+        except json.JSONDecodeError:
+            continue
+
+
+    # Remove tool calls from text and clean up
+    text = re.sub(pattern, "", text, flags=re.DOTALL).strip()
+    return text.strip(), tool_calls if tool_calls else None

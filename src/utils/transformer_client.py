@@ -18,6 +18,8 @@ from utils.timing import measure_time
 from utils.tools import tools_define
 from transformers.utils.quantization_config import BitsAndBytesConfig
 
+from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
+
 
 def load_model():
     global _model, _tokenizer
@@ -31,6 +33,7 @@ def load_model():
                     bnb_4bit_quant_type="nf4",
                     bnb_4bit_compute_dtype=MODEL_OPTIMIZATION["torch_dtype"],
                     bnb_4bit_use_double_quant=True,
+                    use_flash_attention_2=True
                 )
                 _model = AutoModelForCausalLM.from_pretrained(
                     LLM_MODEL_NAME,
@@ -69,38 +72,6 @@ def clear_resources():
     _tokenizer = None
 
 
-def build_prompt(messages: List[dict]) -> str:
-    return "\n".join([f"{m.get('role')}: {m.get('content')}" for m in messages])
-
-
-def extract_tool_calls_and_reupdate_output(text: str):
-    """
-    Extracts all valid JSON objects found within <tool_call>{...}</tool_call> patterns.
-    """
-    tool_calls = []
-
-    # Match any <tool_call> JSON-like structure (greedy to match full JSON block)
-    pattern = r"<tool_call>\s*(\{.*?\})\s*</?tool_call>?"
-
-    matches = list(re.finditer(pattern, text, re.DOTALL))
-
-    for match in matches:
-        try:
-            tool_call = {}
-            tool_call["id"] = str(uuid.uuid4())
-            tool_call["type"] = "function"
-            tool_call["function"] = {
-                "name": match.group(1),
-                "arguments": json.loads(match.group(1)),
-            }
-            tool_calls.append(tool_call)
-        except json.JSONDecodeError:
-            continue
-
-    text = re.sub(pattern, "", text, flags=re.DOTALL).strip()
-    return text.strip(), tool_calls if tool_calls else None
-
-
 def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
 
     if _model is None or _tokenizer is None:
@@ -108,16 +79,13 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
             "Model or tokenizer not initialized. Ensure load_model was called successfully."
         )
 
-    # Convert messages to prompt
-    prompt = build_prompt(messages)
-
     # Prepare tools if enabled
     tools = tools_define.tools if has_tool_call else None
     tool_choice = "auto" if has_tool_call else "none"
 
     # Apply chat template
     formatted_prompt = _tokenizer.apply_chat_template(
-        prompt,
+        messages,
         tools=tools,
         tool_choice=tool_choice,
         tokenize=False,
@@ -130,7 +98,6 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
             inputs = _tokenizer(
                 formatted_prompt,
                 return_tensors="pt",
-                padding=True,
                 truncation=True,
                 max_length=4096,  # Adjust based on your needs
             ).to(TORCH_DEVICE)
@@ -139,12 +106,12 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
             output_ids = _model.generate(
                 **inputs,
                 max_new_tokens=4096,
-                do_sample=True,
-                temperature=0.7,
+                do_sample=False,
+                # temperature=0.7,
                 pad_token_id=_tokenizer.pad_token_id,
                 eos_token_id=_tokenizer.eos_token_id,
-                use_cache=True,  # Enable KV cache for faster generation
-                num_beams=1,  # Use greedy decoding for faster inference
+                # use_cache=True,  # Enable KV cache for faster generation
+                # num_beams=1,  # Use greedy decoding for faster inference
             )
 
             # Decode response
