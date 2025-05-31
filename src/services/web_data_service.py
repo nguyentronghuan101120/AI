@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
 import os
@@ -69,6 +68,8 @@ def web_search_with_3rd_party(search_query: str) -> list[dict[str, str]]:
         If the API call fails or no results are found, an empty list is returned.
         The function requires a valid Brave Search API key to be set in the environment variables.
     """
+    from bs4 import BeautifulSoup
+    
     
     url = f"https://api.search.brave.com/res/v1/web/search"
     

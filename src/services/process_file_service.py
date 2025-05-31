@@ -4,8 +4,7 @@ import uuid
 # import docx2txt
 # from PIL import Image
 # import pytesseract
-from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from constants.config import UPLOAD_DIR
 from constants.file_type import FileType
 from services import vector_store_service
@@ -46,6 +45,8 @@ def splitter_and_save_to_database(file_id, file_type, chat_session_id):
 
 
 def extract_pdf(path):
+    from langchain_community.document_loaders import PyMuPDFLoader
+
     loader = PyMuPDFLoader(path)
     docs = loader.load()
     return docs
@@ -80,6 +81,8 @@ def data_splitter(data, file_id):
         - Adds the file_id to metadata
         - Generates a unique chunk ID using file_id and content
     """
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,  # Split into chunks of 1000 characters
         chunk_overlap=200,  # Overlap chunks by 200 chars to maintain context

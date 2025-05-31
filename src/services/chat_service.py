@@ -3,11 +3,10 @@ from models.requests.chat_request import ChatRequest
 from services import vector_store_service
 
 # from utils.llama_cpp_client import create, create_stream
-from utils import open_ai_client
-from utils import transformer_client
+from utils.clients import open_ai_client
+from utils.clients import transformer_client
 from utils.timing import measure_time
-from utils.tools import tools_helper, tools_define
-from utils.transformer_client import generate, generate_stream
+from utils.tools import tools_helper
 
 
 def build_context_prompt(request: ChatRequest) -> list[dict]:
@@ -53,30 +52,34 @@ def chat_generate_stream(
     messages = build_context_prompt(request)
     messages.extend(request.messages)
     tool_calls = []
-    
 
     with measure_time("Generate stream"):
-        stream = transformer_client.generate_stream(messages=messages, has_tool_call=True)
+        stream = transformer_client.generate_stream(
+            messages=messages, has_tool_call=True
+        )
         for chunk in stream:
             if chunk.get("choices", [])[0].get("delta", {}).get("tool_calls"):
-                tool_calls.extend(chunk.get("choices", [])[0].get("delta", {}).get("tool_calls"))
+                tool_calls.extend(
+                    chunk.get("choices", [])[0].get("delta", {}).get("tool_calls")
+                )
             else:
-                yield chunk 
-    
+                yield chunk
+
     if not tool_calls:
         return
 
     with measure_time("Tool call handling"):
         tool_call_result = tools_helper.process_tool_calls(tool_calls)
-        tool_call_message = {"role": "tool", "content": tool_call_result.get("content", "")}
+        tool_call_message = {
+            "role": "tool",
+            "content": tool_call_result.get("content", ""),
+        }
         messages.append(tool_call_message)
-
 
     with measure_time("Generate new stream"):
         new_stream = transformer_client.generate_stream(messages, has_tool_call=False)
         for chunk in new_stream:
             yield chunk
-    
 
 
 def chat_generate(request: ChatRequest):
@@ -92,9 +95,7 @@ def chat_generate(request: ChatRequest):
     if not tool_calls:
         return output
 
-    tool_call_result = tools_helper.process_tool_calls(
-        tool_calls=tool_calls
-    )
+    tool_call_result = tools_helper.process_tool_calls(tool_calls=tool_calls)
     tool_call_message = {"role": "tool", "content": tool_call_result.get("content", "")}
     messages.append(tool_call_message)
 

@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from constants.config import OUTPUT_DIR
 from models.responses.base_response import BaseResponse
 from routes import chat_routes, process_file_routes, vector_store_routes
-from utils import image_pipeline, transformer_client
+from utils.clients import transformer_client, vector_store_client
 from utils.exception import CustomException
 
 
@@ -17,6 +17,7 @@ from utils.exception import CustomException
 async def lifespan(app: FastAPI):
     try:
         transformer_client.load_model()
+        # vector_store_client.load_vector_store_client()
         # image_pipeline.load_pipeline()
         # pass
 

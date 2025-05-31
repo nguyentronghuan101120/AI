@@ -1,30 +1,34 @@
 from email import message
-import json
-import re
 from threading import Thread
 from typing import Generator, List
 import uuid
-from numpy import append
-from sympy import content
-import torch
-from transformers.models.auto.modeling_auto import AutoModelForCausalLM
-from transformers.models.auto.tokenization_auto import AutoTokenizer
+
 from constants.config import (
     LLM_MODEL_NAME,
     TORCH_DEVICE,
     USE_QUANT,
     MODEL_OPTIMIZATION,
 )
-from transformers.generation.streamers import TextIteratorStreamer
+
 from utils.timing import measure_time
 from utils.tools import tools_define
-from transformers.utils.quantization_config import BitsAndBytesConfig
+
 from utils.stream_helper import process_stream_content
 
 from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
 
 
 def load_model():
+    try:
+        from transformers.models.auto.modeling_auto import AutoModelForCausalLM
+        from transformers.models.auto.tokenization_auto import AutoTokenizer
+        from transformers.generation.streamers import TextIteratorStreamer
+        from transformers.utils.quantization_config import BitsAndBytesConfig
+    except ImportError:
+        import subprocess  # type: ignore
+        import sys  # type: ignore
+
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers"])
     global _model, _tokenizer
 
     # Configure model loading based on device
@@ -36,7 +40,7 @@ def load_model():
                     bnb_4bit_quant_type="nf4",
                     bnb_4bit_compute_dtype=MODEL_OPTIMIZATION["torch_dtype"],
                     bnb_4bit_use_double_quant=True,
-                    use_flash_attention_2=True
+                    use_flash_attention_2=True,
                 )
                 _model = AutoModelForCausalLM.from_pretrained(
                     LLM_MODEL_NAME,
@@ -48,7 +52,7 @@ def load_model():
                     # max_memory={0: "4GiB"},  # Limit GPU memory usage
                 )
             else:
-                _model = AutoModelForCausalLM.from_pretrained(  
+                _model = AutoModelForCausalLM.from_pretrained(
                     LLM_MODEL_NAME,
                     torch_dtype=MODEL_OPTIMIZATION["torch_dtype"],
                     device_map="auto",
@@ -98,55 +102,55 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
     )
 
     try:
-            # Tokenize input with optimized settings
-            inputs = _tokenizer(
-                formatted_prompt,
-                return_tensors="pt",
-                truncation=True,
-                max_length=4096,  # Adjust based on your needs
-            ).to(TORCH_DEVICE)
+        # Tokenize input with optimized settings
+        inputs = _tokenizer(
+            formatted_prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=4096,  # Adjust based on your needs
+        ).to(TORCH_DEVICE)
 
-            # Generate response with optimized settings
-            output_ids = _model.generate(
-                **inputs,
-                max_new_tokens=4096,
-                do_sample=False,
-                # temperature=0.7,
-                pad_token_id=_tokenizer.pad_token_id,
-                eos_token_id=_tokenizer.eos_token_id,
-                # use_cache=True,  # Enable KV cache for faster generation
-                # num_beams=1,  # Use greedy decoding for faster inference
-            )
+        # Generate response with optimized settings
+        output_ids = _model.generate(
+            **inputs,
+            max_new_tokens=4096,
+            do_sample=False,
+            # temperature=0.7,
+            pad_token_id=_tokenizer.pad_token_id,
+            eos_token_id=_tokenizer.eos_token_id,
+            # use_cache=True,  # Enable KV cache for faster generation
+            # num_beams=1,  # Use greedy decoding for faster inference
+        )
 
-            # Decode response
-            output_text = _tokenizer.decode(
-                output_ids[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
-            )
+        # Decode response
+        output_text = _tokenizer.decode(
+            output_ids[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
+        )
 
-            cleaned_output, tool_calls = extract_tool_calls_and_reupdate_output(
-                output_text
-            )
+        cleaned_output, tool_calls = extract_tool_calls_and_reupdate_output(output_text)
 
-            # Create ChatResponse using from_llm_output
-            return {
-                "id": f"chatcmpl-{uuid.uuid4().hex}",
-                "choices": [
-                    {
-                        "message": {
-                            "role": "assistant",
-                            "content": cleaned_output,
-                            "tool_calls": tool_calls,
-                        },
-                    }
-                ],
-            }
+        # Create ChatResponse using from_llm_output
+        return {
+            "id": f"chatcmpl-{uuid.uuid4().hex}",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": cleaned_output,
+                        "tool_calls": tool_calls,
+                    },
+                }
+            ],
+        }
 
     except Exception as e:
         print(f"Error in create chat completion: {str(e)}")
         raise
 
 
-def generate_stream(messages: List[dict], has_tool_call: bool = True) -> Generator[dict, None, None]:
+def generate_stream(
+    messages: List[dict], has_tool_call: bool = True
+) -> Generator[dict, None, None]:
     if _model is None or _tokenizer is None:
         raise RuntimeError(
             "Model or tokenizer not initialized. Ensure load_model was called successfully."
@@ -202,7 +206,9 @@ def generate_stream(messages: List[dict], has_tool_call: bool = True) -> Generat
 
         # Use the common stream processor
         yield from process_stream_content(content_generator())
-            
+
     except Exception as e:
         print(f"Error in create stream chat completion: {str(e)}")
-        yield {"choices": [{"delta": {"role": "assistant", "content": f"Error: {str(e)}"}}]}
+        yield {
+            "choices": [{"delta": {"role": "assistant", "content": f"Error: {str(e)}"}}]
+        }

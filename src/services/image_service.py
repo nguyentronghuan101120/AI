@@ -1,7 +1,7 @@
 import os
 import time
 from constants.config import OUTPUT_DIR
-from utils import image_pipeline
+from utils.clients import image_pipeline_client
 
 negative_promt = "blurry, distorted, pixelated, incomplete, poorly drawn, misaligned, weird proportions, bad perspective, unnatural colors, noisy, out of focus, glitchy, unsharp, overexposed, underexposed, poorly lit, bad composition, excessive noise, oversaturated, too dark, too bright, inconsistent lighting, discolored, overly stylized, unrealistic, awkward pose, unbalanced, mismatched, distorted features, flat, unnatural texture, chaotic, unreadable, incoherent, asymmetrical, low quality, lowres, wrong anatomy, bad anatomy, deformed, disfigured, ugly"
 width = 512
@@ -11,15 +11,19 @@ num_inference_steps = 30
 
 base_url = "http://0.0.0.0:7860"
 
+
 def generate_image_url(prompt: str) -> str:
     """
     Creates an image based on the specified prompt using DiffusionPipeline
     :param prompt: The prompt used for generate the image (must be in English)
     :output: URL of the new image
     """
+    if not image_pipeline_client.pipeline:
+        raise RuntimeError("Image pipeline not loaded")
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     try:
-        image = image_pipeline.pipeline(
+        image = image_pipeline_client.pipeline(
             prompt=prompt,
             negative_prompt=negative_promt,
             width=width,
