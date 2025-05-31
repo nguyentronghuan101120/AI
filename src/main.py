@@ -13,24 +13,22 @@ from utils import image_pipeline, transformer_client
 from utils.exception import CustomException
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     try:
-#         # transformer_client.load_model()
-#         # image_pipeline.load_pipeline()
-#         pass
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        # transformer_client.load_model()
+        # image_pipeline.load_pipeline()
+        pass
 
-#     except Exception as e:
-#         print(f"Error during startup: {str(e)}")
+    except Exception as e:
+        print(f"Error during startup: {str(e)}")
 
-#     yield
-#     pass
-#     # transformer_client.clear_resources()
-#     # image_pipeline.clear_resources()
+    yield
+    # transformer_client.clear_resources()
+    # image_pipeline.clear_resources()
 
 
-# app = FastAPI(lifespan=lifespan)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 origins = ["*"]
 app.add_middleware(
