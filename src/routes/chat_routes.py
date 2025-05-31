@@ -38,15 +38,14 @@ def chat_stream(request: ChatRequest):
     def event_generator():
         try:
             for chunk in stream:
-
-                if cancel_flags.get(request.chat_session_id, False):
+                if request.chat_session_id and cancel_flags.get(request.chat_session_id, False):
                     break
 
-                chunk_dict = json.loads(chunk.model_dump_json())
-                response = BaseResponse(data=chunk_dict).model_dump()
+                response = BaseResponse(data=chunk).model_dump()
                 yield f"{json.dumps(response, ensure_ascii=False)}\n\n"
         finally:
-            cancel_flags.pop(request.chat_session_id, None)
+            if request.chat_session_id is not None:
+                cancel_flags.pop(request.chat_session_id, None)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -70,9 +69,7 @@ async def chat(request: ChatRequest):
     try:
         response = chat_service.chat_generate(request=request)
         return BaseResponse(
-            data=json.loads(
-                response.model_dump_json(),
-            ),
+            data=response,
         )
     except Exception as e:
         raise BaseExceptionResponse(message=str(e))
