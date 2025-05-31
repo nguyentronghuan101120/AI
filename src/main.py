@@ -16,9 +16,9 @@ from utils.exception import CustomException
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        # transformer_client.load_model()
+        transformer_client.load_model()
         # image_pipeline.load_pipeline()
-        pass
+        # pass
 
     except Exception as e:
         print(f"Error during startup: {str(e)}")

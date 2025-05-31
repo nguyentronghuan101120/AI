@@ -5,6 +5,8 @@ from threading import Thread
 from typing import Generator, List
 import uuid
 from numpy import append
+from sympy import content
+import torch
 from transformers.models.auto.modeling_auto import AutoModelForCausalLM
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from constants.config import (
@@ -17,6 +19,7 @@ from transformers.generation.streamers import TextIteratorStreamer
 from utils.timing import measure_time
 from utils.tools import tools_define
 from transformers.utils.quantization_config import BitsAndBytesConfig
+from utils.stream_helper import process_stream_content
 
 from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
 
@@ -42,14 +45,16 @@ def load_model():
                     quantization_config=quantization_config,
                     low_cpu_mem_usage=MODEL_OPTIMIZATION["low_cpu_mem_usage"],
                     use_cache=MODEL_OPTIMIZATION["use_cache"],
+                    # max_memory={0: "4GiB"},  # Limit GPU memory usage
                 )
             else:
-                _model = AutoModelForCausalLM.from_pretrained(
+                _model = AutoModelForCausalLM.from_pretrained(  
                     LLM_MODEL_NAME,
                     torch_dtype=MODEL_OPTIMIZATION["torch_dtype"],
                     device_map="auto",
                     low_cpu_mem_usage=MODEL_OPTIMIZATION["low_cpu_mem_usage"],
                     use_cache=MODEL_OPTIMIZATION["use_cache"],
+                    # max_memory={0: "8GiB"},  # Limit GPU memory usage
                 )
 
             # Configure tokenizer with appropriate settings
@@ -93,7 +98,6 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
     )
 
     try:
-        with measure_time("Create chat completion"):
             # Tokenize input with optimized settings
             inputs = _tokenizer(
                 formatted_prompt,
@@ -142,23 +146,21 @@ def generate(messages: List[dict], has_tool_call: bool = True) -> dict:
         raise
 
 
-def generate_stream(messages: List[dict]) -> Generator[dict, None, None]:
-
+def generate_stream(messages: List[dict], has_tool_call: bool = True) -> Generator[dict, None, None]:
     if _model is None or _tokenizer is None:
         raise RuntimeError(
             "Model or tokenizer not initialized. Ensure load_model was called successfully."
         )
 
-    # Convert messages to prompt
-    prompt = build_prompt(messages)
-    # Prepare tools
-    tools = tools_define.tools
+    # Prepare tools if enabled
+    tools = tools_define.tools if has_tool_call else None
+    tool_choice = "auto" if has_tool_call else "none"
 
     # Apply chat template
     formatted_prompt = _tokenizer.apply_chat_template(
-        prompt,
+        messages,
         tools=tools,
-        tool_choice="auto",
+        tool_choice=tool_choice,
         tokenize=False,
         add_generation_prompt=True,
     )
@@ -166,7 +168,7 @@ def generate_stream(messages: List[dict]) -> Generator[dict, None, None]:
     try:
         # Tokenize input with optimized settings
         inputs = _tokenizer(
-            prompt,
+            formatted_prompt,
             return_tensors="pt",
             padding=True,
             truncation=True,
@@ -185,28 +187,22 @@ def generate_stream(messages: List[dict]) -> Generator[dict, None, None]:
             streamer=streamer,
             do_sample=True,
             max_new_tokens=4096,
-            temperature=0.7,
             pad_token_id=_tokenizer.pad_token_id,
             eos_token_id=_tokenizer.eos_token_id,
-            use_cache=True,  # Enable KV cache for faster generation
-            num_beams=1,  # Use greedy decoding for faster inference
         )
 
         # Generate in background thread
         thread = Thread(target=_model.generate, kwargs=generation_kwargs)
         thread.start()
 
-        last_role = "assistant"
-        for new_text in streamer:
-            # Format the chunk to match the expected structure
-            chunk = {
-                "choices": [{"delta": {"role": last_role.value, "content": new_text}}]
-            }
-            response, updated_role = ChatResponse.from_stream_chunk(chunk, last_role)
-            if response.choices:  # Only yield if we have valid choices
-                yield response
-            if updated_role:
-                last_role = updated_role
+        # Create a generator that yields content from the streamer
+        def content_generator():
+            for content in streamer:
+                yield content
+
+        # Use the common stream processor
+        yield from process_stream_content(content_generator())
+            
     except Exception as e:
         print(f"Error in create stream chat completion: {str(e)}")
-        raise
+        yield {"choices": [{"delta": {"role": "assistant", "content": f"Error: {str(e)}"}}]}

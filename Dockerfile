@@ -28,19 +28,21 @@ RUN mkdir -p /tmp/cache /tmp/vector_store /.cache && \
 COPY requirements.txt .
 # RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-# Install llama-cpp-python first (faster rebuilds)
-RUN pip install --no-cache-dir "llama-cpp-python==0.3.8" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+# # Install llama-cpp-python first (faster rebuilds)
+# RUN pip install --no-cache-dir "llama-cpp-python==0.3.8" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 
-# Remove llama line from requirements and install the rest
-RUN grep -v "llama-cpp-python" requirements.txt > requirements-no-llama.txt && \
-    pip install --no-cache-dir -r requirements-no-llama.txt
+# # Remove llama line from requirements and install the rest
+# RUN grep -v "llama-cpp-python" requirements.txt > requirements-no-llama.txt && \
+#     pip install --no-cache-dir -r requirements-no-llama.txt
+
+run pip install --no-cache-dir -r requirements.txt
 
 # 6. Copy only necessary files and folders
 COPY requirements.txt .
-COPY src/ ./src
+COPY src/ .
 
 # 7. Expose the port FastAPI will run on
 EXPOSE 7860
 
 # 8. Set the default command to run the FastAPI app
-CMD ["fastapi", "run", "src/main.py", "--port", "7860"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
