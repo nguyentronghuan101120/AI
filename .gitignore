@@ -14,3 +14,4 @@ venv/
 .venv/
 bitsandbytes/*
 llama-cpp-python/*
+local_packages_for_win/*

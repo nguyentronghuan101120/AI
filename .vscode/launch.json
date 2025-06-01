@@ -1,7 +1,4 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -9,14 +6,6 @@
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
-            // "env": {
-            //     "db_username": "postgres",
-            //     "db_password": "secret",
-            //     "host_server": "localhost",
-            //     "database_name": "fastapi",
-            //     "ssl_mode": "prefer",
-            //     "db_server_port": "5432"
-            // },
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             },
@@ -26,9 +15,11 @@
                 "--port",
                 "7860",
                 "--host",
-                "0.0.0.0",
-            ]
+                "0.0.0.0"
+            ],
+            "windows": {
+                "python": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+            }
         }
-       
     ]
 }

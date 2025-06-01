@@ -35,6 +35,7 @@ def load_model():
     try:
         with measure_time("Load model"):
             if USE_QUANT:
+                print("Using quantization")
                 quantization_config = BitsAndBytesConfig(
                     load_in_4bit=True,
                     bnb_4bit_quant_type="nf4",
@@ -52,6 +53,7 @@ def load_model():
                     # max_memory={0: "4GiB"},  # Limit GPU memory usage
                 )
             else:
+                print("Not using quantization")
                 _model = AutoModelForCausalLM.from_pretrained(
                     LLM_MODEL_NAME,
                     torch_dtype=MODEL_OPTIMIZATION["torch_dtype"],

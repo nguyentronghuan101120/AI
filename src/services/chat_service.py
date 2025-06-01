@@ -3,7 +3,6 @@ from models.requests.chat_request import ChatRequest
 from services import vector_store_service
 
 # from utils.llama_cpp_client import create, create_stream
-from utils.clients import open_ai_client
 from utils.clients import transformer_client
 from utils.timing import measure_time
 from utils.tools import tools_helper
@@ -87,7 +86,7 @@ def chat_generate(request: ChatRequest):
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    output = open_ai_client.generate(messages=messages)
+    output = transformer_client.generate(messages=messages)
     choices = output.get("choices", [])
 
     tool_calls = choices[0].get("message").get("tool_calls")
@@ -100,5 +99,5 @@ def chat_generate(request: ChatRequest):
     messages.append(tool_call_message)
 
     # new_output = generate(messages=messages, has_tool_call=False)
-    new_output = open_ai_client.generate(messages=messages, has_tool_call=False)
+    new_output = transformer_client.generate(messages=messages, has_tool_call=False)
     return new_output
