@@ -53,9 +53,7 @@ def chat_generate_stream(
     tool_calls = []
 
     with measure_time("Generate stream"):
-        stream = transformer_client.generate_stream(
-            messages=messages, has_tool_call=True
-        )
+        stream = llama_cpp_client.generate_stream(messages=messages, has_tool_call=True)
         for chunk in stream:
             if chunk.get("choices", [])[0].get("delta", {}).get("tool_calls"):
                 tool_calls.extend(
@@ -76,7 +74,7 @@ def chat_generate_stream(
         messages.append(tool_call_message)
 
     with measure_time("Generate new stream"):
-        new_stream = transformer_client.generate_stream(messages, has_tool_call=False)
+        new_stream = llama_cpp_client.generate_stream(messages, has_tool_call=False)
         for chunk in new_stream:
             yield chunk
 
@@ -86,18 +84,25 @@ def chat_generate(request: ChatRequest):
     messages = build_context_prompt(request)
     messages.extend(request.messages)
 
-    output = llama_cpp_client.create(messages=messages)
-    choices = output.get("choices", [])
+    with measure_time("Generate chat completion"):
+        output = llama_cpp_client.generate(messages=messages)
 
-    tool_calls = choices[0].get("message").get("tool_calls")
+        choices = output.get("choices", [])
 
-    if not tool_calls:
-        return output
+        tool_calls = choices[0].get("message").get("tool_calls")
 
-    tool_call_result = tools_helper.process_tool_calls(tool_calls=tool_calls)
-    tool_call_message = {"role": "tool", "content": tool_call_result.get("content", "")}
-    messages.append(tool_call_message)
+        if not tool_calls:
+            return output
 
-    # new_output = generate(messages=messages, has_tool_call=False)
-    new_output = transformer_client.generate(messages=messages, has_tool_call=False)
-    return new_output
+    with measure_time("Tool call handling"):
+        tool_call_result = tools_helper.process_tool_calls(tool_calls=tool_calls)
+        tool_call_message = {
+            "role": "tool",
+            "content": tool_call_result.get("content", ""),
+        }
+        messages.append(tool_call_message)
+
+    with measure_time("Generate new chat completion"):
+        new_output = llama_cpp_client.generate(messages=messages, has_tool_call=False)
+
+        return new_output
