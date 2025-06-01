@@ -25,10 +25,7 @@ def load_model():
         from transformers.generation.streamers import TextIteratorStreamer
         from transformers.utils.quantization_config import BitsAndBytesConfig
     except ImportError:
-        import subprocess  # type: ignore
-        import sys  # type: ignore
-
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers"])
+        raise ImportError("transformers is not installed. Please install it using 'pip install transformers'.")
     global _model, _tokenizer
 
     # Configure model loading based on device

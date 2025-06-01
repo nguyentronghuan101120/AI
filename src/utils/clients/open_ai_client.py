@@ -10,11 +10,7 @@ def load_open_ai_client():
     try:
         import openai
     except ImportError:
-        import subprocess  # type: ignore
-        import sys  # type: ignore
-
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
-        import openai
+        raise ImportError("openai is not installed. Please install it using 'pip install openai'.")
 
     global _open_ai_client
     _open_ai_client = openai.OpenAI(
