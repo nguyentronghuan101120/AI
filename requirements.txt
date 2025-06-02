@@ -12,7 +12,7 @@ uvicorn == 0.34.2
 
 # If use llama-cpp-python
 llama-cpp-python == 0.3.8
-# --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 
 # If process file feature enable
 # beautifulsoup4 == 4.13.4
