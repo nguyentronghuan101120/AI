@@ -17,6 +17,14 @@ from utils.stream_helper import process_stream_content
 
 from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
 
+_model = None
+_tokenizer = None
+
+
+def is_loaded() -> bool:
+    """Check if the model and tokenizer are loaded."""
+    return _model is not None and _tokenizer is not None
+
 
 def load_model():
     try:
@@ -25,7 +33,9 @@ def load_model():
         from transformers.generation.streamers import TextIteratorStreamer
         from transformers.utils.quantization_config import BitsAndBytesConfig
     except ImportError:
-        raise ImportError("transformers is not installed. Please install it using 'pip install transformers'.")
+        raise ImportError(
+            "transformers is not installed. Please install it using 'pip install transformers'."
+        )
     global _model, _tokenizer
 
     # Configure model loading based on device

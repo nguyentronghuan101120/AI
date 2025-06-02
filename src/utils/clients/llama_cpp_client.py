@@ -10,6 +10,11 @@ from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
 _llm = None
 
 
+def is_loaded() -> bool:
+    """Check if the LLM is loaded."""
+    return _llm is not None
+
+
 def load():
     try:
         import llama_cpp

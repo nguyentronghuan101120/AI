@@ -5,12 +5,21 @@ from utils.tools import tools_define
 from utils.tools.tools_helper import extract_tool_calls_and_reupdate_output
 from utils.stream_helper import process_stream_content
 
+_open_ai_client = None
+
+
+def is_loaded() -> bool:
+    """Check if the OpenAI client is loaded."""
+    return _open_ai_client is not None
+
 
 def load_open_ai_client():
     try:
         import openai
     except ImportError:
-        raise ImportError("openai is not installed. Please install it using 'pip install openai'.")
+        raise ImportError(
+            "openai is not installed. Please install it using 'pip install openai'."
+        )
 
     global _open_ai_client
     _open_ai_client = openai.OpenAI(
